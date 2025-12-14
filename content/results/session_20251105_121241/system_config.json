@@ -1,0 +1,22 @@
+{
+  "video_source": 0,
+  "output_base_dir": "C:\\Users\\fil\\Desktop\\aprendizado\\content/results",
+  "frame_skip": 1,
+  "max_processed_frames": 240,
+  "save_option": 1,
+  "show_preview": true,
+  "model_size": "n",
+  "conf_threshold": 0.4,
+  "iou_threshold": 0.5,
+  "classes": [
+    0
+  ],
+  "persist": true,
+  "tracker": "bytetrack.yaml",
+  "use_reid": true,
+  "reid_config": {
+    "similarity_threshold": 0.7,
+    "max_features_per_id": 3,
+    "model_name": "osnet_x0_25"
+  }
+}
