@@ -1,9 +1,8 @@
-from dataclasses import dataclass
-from typing import any
+from dataclasses import dataclass, field
+from typing import Any
 
 @dataclass
 class Person:
     id : int
-    last_seen : any
-    seen_count : int
-    Features : list
+    seen_count : int = 0
+    Features : list[Any] = field(default_factory=list)

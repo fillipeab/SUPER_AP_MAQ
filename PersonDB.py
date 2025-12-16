@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-from typing import any
+from dataclasses import dataclass, field
+from typing import Any
 from Person import Person
 
 @dataclass
@@ -19,6 +19,6 @@ class PersonDB:
     def size(self):
         return self.stored_persons.len()
     
-    def list_persons(self, pos : int = 0):
+    def show(self, pos : int = 0):
         return self.stored_persons[pos]
             
