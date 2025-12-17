@@ -10,15 +10,12 @@ class PersonDB:
         self.stored_persons.append(item)
     
     def remove(self, pos : int = -1):
-        if pos == -1:
-            self.stored_persons[pos].pop()
-        else:
-            self.stored_persons[pos].pop(pos)
+        self.stored_persons[pos].pop(pos)
     
     @property
     def size(self):
         return self.stored_persons.len()
     
-    def show(self, pos : int = 0):
+    def get_person(self, pos : int = 0):
         return self.stored_persons[pos]
             

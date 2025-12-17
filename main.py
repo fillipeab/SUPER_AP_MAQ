@@ -6,4 +6,4 @@ pessoa = Person(1)
 banco = PersonDB()
 
 banco.add(pessoa)
-banco.show()
+a = banco.show()
