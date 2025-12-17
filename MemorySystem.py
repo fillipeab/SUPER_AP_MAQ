@@ -10,8 +10,6 @@ class MemorySystem:
     
     def __post_innit__(self):
         self.person_DBs.append(PersonDB())
-        self.reid_systems.append(reid_system_zero())
-    
     
     ###Re-id System list methods(add, remove by pos)
     def add_reid_system(self,new_system):
@@ -31,9 +29,9 @@ class MemorySystem:
         return self.person_DBs[pos]
         
     
-    ###The object is, by definition, the output of the identification system(probably YOLO), in the format of temporary_person, and the output of the method will be the position of the best-match, if there is one.
+    ###The object is, by definition, the output of the identification system(probably YOLO), in the format of temporary_person list, and the output of the method will be the best-matched id, if there is one, for each. Especifically, the temporary_person list will change the temporary id for a new one.
     ### By definition, there should be at least 1 reid and one person_db. More can be added.
-    def reid_compare(self,object,reid_pos=0,person_db_pos=0):
+    def reid_analyse(self,object,reid_pos=0,person_db_pos=0):
         reid_result = self.reid_systems[reid_pos](person_db_pos,object)
         return reid_result
     
