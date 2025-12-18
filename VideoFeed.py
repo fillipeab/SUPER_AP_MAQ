@@ -5,18 +5,16 @@ from dataclasses import dataclass, field
 from typing import Any
 
 @dataclass
-class VideoFeed(source,queue):
-    source=source
-    queue=queue
+class VideoFeed:
+    source : Any
+    video_queue : Queue = field(default_factory = Queue)
     
-    def __call__(self,source=self.source,queue=self.queue):
-        cap = cv2.VideoCapture(source)
+    def __call__(self):
+        cap = cv2.VideoCapture(self.source)
         while True:
             ret,frame = cap.read()
             if not ret:
                 break
             # Adicionar resultado na fila
-            queue.put({
-                frame
-            })
+            self.video_queue.put(frame)
         cap.release()

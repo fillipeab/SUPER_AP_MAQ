@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from VideoFeed import VideoFeed
 
 ### Video sources
-video_sources = [] #(Source)
+dummy_video_sources = [0] #(Source)
 
 def create_queues(number_of_queues : int = 1):
     queues_from_sources = []
@@ -16,10 +16,17 @@ def create_queues(number_of_queues : int = 1):
 
 @dataclass
 class VideoFeedManager:
-    video_sources = list = video_sources
-    number_of_queues = self.video_sources.len()
-    queues_from_sources = create_queues(number_of_queues)
-        
+    video_sources : list = field(default_factory = lambda: dummy_video_sources.copy())
+    queues_from_sources : list = field(default_factory=list)
+
+
+    def __post_init__(self):
+        self.queues_from_sources = create_queues(self.number_of_queues)
+    
+    @property
+    def number_of_queues(self):
+        return len(self.video_sources)
+    
     def start(self):
         # Iniciar threads
         for i in range(self.number_of_queues): ###for each camera in the list
@@ -37,6 +44,9 @@ class VideoFeedManager:
 ###just testing
 
 if __name__ == "__main__":
+    print("Testing fuctioning")
     video_sources_2=[1,2]
-    Test_manager = VideoFeedManager
+    Test_manager = VideoFeedManager()
     Test_manager2 = VideoFeedManager(video_sources_2)
+    print(Test_manager.video_sources[0])
+    print(Test_manager2.video_sources[0],Test_manager2.video_sources[1])
