@@ -1,3 +1,6 @@
+import cv2
+import torch
+import numpy as np
 from dataclasses import dataclass, field
 from typing import Any
 from ultralytics import YOLO
@@ -35,6 +38,7 @@ class YoloID8n():
     model = YOLO('yolov8n.pt') ### You might use any of this
     
     def __call__(self,source):
+        
         tracker_result = self.model.track(
         source=source,  #
         tracker='strongsort.yaml',  # or 'botsort.yaml'
@@ -46,22 +50,48 @@ class YoloID8n():
         device='cuda',      # 'cpu' or 'cuda' (GPU)
         verbose=True        # Show logs
         )
-        
+        return tracker_result
+        """
         temporary_persons = []
-        for element in tracker_result[0]: ###The result from model.track is always a list, in which each position is respective to a frame. However, in our case, there's only 1 frame ever. So, just the first position is accounted for.
-            t_person = TempPerson()
-            t_person.id = element["track_id"]
-            t_person.bb = element['bbox']
-            t_person.confidence = element['confidence']
-            t_person.position = element['position']
-            temporary_persons.append(t_person)
+        for frame in tracker_result: ### By definition, there should be ONLY one frame. However, in the possibility of having more than one, this implementation was done. It's important to note that it will leave ALL detections in the same list. That is, there will be no frame differentiation.
+            for element in frame.boxes:
+                ### FIX THIS AND IMPROVE ####
+                t_person = TempPerson()
+                t_person.id = element["track_id"]
+                t_person.bb = element['bbox']
+                t_person.confidence = element['confidence']
+                t_person.position = element['position']
+                temporary_persons.append(t_person)
         return temporary_persons
-        
+        """
 
 
 
 ### Testing
 if __name__ == "__main__":
-    
+    id_system = IdSystem()
+    test_source = "auxiliares/People_in_line.mp4"
+    detections = []
+    cap = cv2.VideoCapture(test_source)
+
+    # Verifica se abriu
+    if not cap.isOpened():
+        print("Erro ao abrir vídeo")
+        exit()
+    while True:
+        ret, frame = cap.read()
+        detection = id_system(frame) ### checking detection
+        print(detection,"\n")
+        if not ret:
+            break  # End
+        # show frame
+        cv2.imshow('Video', frame)
+        
+        if cv2.waitKey(25) & 0xFF == ord('q'):
+            break
+
+    # 3. Release recursos
+    cap.release()
+    cv2.destroyAllWindows()
     
         
