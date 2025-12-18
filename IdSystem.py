@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from typing import Any
 from ultralytics import YOLO
 from TempPerson import TempPerson
-### This class aims to manage the Id(identification) system. The temporal management bellongs to the ProcessManager, not this class. This class ONLY receives FRAMES(inputs) and gives Temp_Person as answers.
+### This class aims to manage the Id(identification) system. The temporal management bellongs to the ProcessManager, not this class. This class ONLY receives FRAMES(inputs) and gives Temp_Person(s) as answers.
 
 
 @dataclass
@@ -34,7 +34,7 @@ class IdSystem: ### Ideally, should be able to use more than one model
 
 
 
-###YOLO
+### YOLO ###
 @dataclass
 class YoloID8n():
     # YOLO('yolov8s.pt')            # Small
@@ -61,7 +61,6 @@ class YoloID8n():
         for frame in tracker_result: ### By definition, there should be ONLY one frame. However, in the possibility of having more than one, this implementation was done. It's important to note that it will leave ALL detections in the same list. That is, there will be no frame differentiation.
             element=frame.boxes
             try:
-                print (len(element.id))
                 for i in range(len(element.id)): ###Getting the number of detections
                     t_person = TempPerson()
                     t_person.id = element.id[i]
@@ -70,7 +69,7 @@ class YoloID8n():
                     temporary_persons.append(t_person)
             except:
                 pass
-        return tracker_result, temporary_persons
+        return {"result" : tracker_result, "temporary_persons" : temporary_persons}
     
     def testing(self, source):
                 
@@ -86,13 +85,16 @@ class YoloID8n():
         verbose=True        # Show logs
         )
         temporary_persons = ["testing"]
-        return tracker_result, temporary_persons
+        return {"result" : tracker_result, "temporary_persons" : temporary_persons}
 
 
 
-### Debug
-print_box_output = True #TRUE or False
+### Debug ###
+
 Testing_mode = False ###Used to test the model detecting and tracking, but not exporting personal atributes.
+
+print_box_output = True #TRUE or False
+
 
 if __name__ == "__main__":
     ###VideoWriter
@@ -117,14 +119,21 @@ if __name__ == "__main__":
     while True:
         ret, frame = cap.read()
         if Testing_mode == True:
-            tracker_result, temporary_persons = id_system.testing(frame) ### checking detection
+             saida = id_system.testing(frame)
+             tracker_result, temporary_persons = saida["result"], saida["temporary_persons"]
         else:
-            tracker_result, temporary_persons = id_system(frame) ### checking detection
+            saida = id_system(frame)
+            tracker_result, temporary_persons = saida["result"], saida["temporary_persons"]
         
         if print_box_output==True:
             if temporary_persons:
-                print(temporary_persons[0],"\n")  ### a way to find exactly what is the output from the YOLO tracker
-            print(tracker_result[0].boxes,"\n")
+                print("\n","||==========<>==========<>==========<>==========<>==========||","\n",
+                      "first temp_person","\n",
+                      temporary_persons[0],"\n",
+                      "||==========<>==========<>==========<>==========<>==========||","\n")  ### a way to find exactly what is the output from the YOLO tracker
+            print("boxes:","\n",
+            "||----------|----------|----------|----------|----------|----------||","\n",
+            tracker_result[0].boxes,"\n")
             
         
         if not ret:
