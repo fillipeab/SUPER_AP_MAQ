@@ -14,16 +14,22 @@ class IdSystem: ### Ideally, should be able to use more than one model
     model_in_use = Any
     
     def __post_init__(self): ###Creates the instance of the selected model
-        if self.model_type == "YoloID8n":
+        if self.model_type == "YoloID8n": 
             self.model_in_use = YoloID8n()
-    
+
     def __call__(self,source):
-        if self.model_type == "YoloID8n":
-            model_analysis = self.model_in_use(source)
+        if self.model_type == "YoloID8n": ###Making sure the model does exist
+            model_analysis = self.model_in_use(source) ###The model was already created in post_init. New models should, by extent, receive the same treatment, in the future
             return model_analysis
         else:
             print("Please, select an avaliable model, or use the standard, by giving no input")
 
+    def testing(self,source):
+        if self.model_type == "YoloID8n": ###Making sure the model does exist
+            model_analysis = self.model_in_use.testing(source) ###The model was already created in post_init. New models should, by extent, receive the same treatment, in the future
+            return model_analysis
+        else:
+            print("Please, select an avaliable model, or use the standard, by giving no input")
 
 
 
@@ -40,38 +46,53 @@ class YoloID8n():
     def __call__(self,source):
         
         tracker_result = self.model.track(
+        source=source,
+        tracker='botsort.yaml',  # or 'botsort.yaml'
+        show=False,
+        persist=True,
+        save=False,
+        classes=[0],       # Filter classes: 0=person
+        conf=0.5,          # Confidence threshold
+        iou=0.5,           # IOU threshold
+        device='cpu',      # 'cpu' or 'cuda' (GPU)
+        verbose=False      # Show logs
+        )
+        temporary_persons = []
+        for frame in tracker_result: ### By definition, there should be ONLY one frame. However, in the possibility of having more than one, this implementation was done. It's important to note that it will leave ALL detections in the same list. That is, there will be no frame differentiation.
+            element=frame.boxes
+            try:
+                print (len(element.id))
+                for i in range(len(element.id)): ###Getting the number of detections
+                    t_person = TempPerson()
+                    t_person.id = element.id[i]
+                    t_person.bb = element.xyxy[i]
+                    t_person.confidence = element.conf[i]
+                    temporary_persons.append(t_person)
+            except:
+                pass
+        return tracker_result, temporary_persons
+    
+    def testing(self, source):
+                
+        tracker_result = self.model.track(
         source=source,  #
         tracker='botsort.yaml',  # or 'botsort.yaml'
-        show=True,
-        save=True,
+        show=False,
+        save=False,
         classes=[0],  # Filter classes: 0=person
         conf=0.5,           # Confidence threshold
         iou=0.5,            # IOU threshold
         device='cpu',      # 'cpu' or 'cuda' (GPU)
         verbose=True        # Show logs
         )
-        return tracker_result
-        """
-        temporary_persons = []
-        for frame in tracker_result: ### By definition, there should be ONLY one frame. However, in the possibility of having more than one, this implementation was done. It's important to note that it will leave ALL detections in the same list. That is, there will be no frame differentiation.
-            for element in frame.boxes:
-                ### FIX THIS AND IMPROVE ####
-                t_person = TempPerson()
-                t_person.id = element["track_id"]
-                t_person.bb = element['bbox']
-                t_person.confidence = element['confidence']
-                t_person.position = element['position']
-                temporary_persons.append(t_person)
-        return temporary_persons
-        """
+        temporary_persons = ["testing"]
+        return tracker_result, temporary_persons
 
 
 
-### Testing
-
-
-
-
+### Debug
+print_box_output = True #TRUE or False
+Testing_mode = False ###Used to test the model detecting and tracking, but not exporting personal atributes.
 
 if __name__ == "__main__":
     ###VideoWriter
@@ -87,7 +108,6 @@ if __name__ == "__main__":
 
     id_system = IdSystem()
     test_source = "auxiliares/People_in_line.mp4"
-    detections = []
     cap = cv2.VideoCapture(test_source)
 
     # Verifica se abriu
@@ -96,15 +116,22 @@ if __name__ == "__main__":
         exit()
     while True:
         ret, frame = cap.read()
-        detection = id_system(frame) ### checking detection
-        print(detection[0].boxes,"\n")
+        if Testing_mode == True:
+            tracker_result, temporary_persons = id_system.testing(frame) ### checking detection
+        else:
+            tracker_result, temporary_persons = id_system(frame) ### checking detection
+        
+        if print_box_output==True:
+            if temporary_persons:
+                print(temporary_persons[0],"\n")  ### a way to find exactly what is the output from the YOLO tracker
+            print(tracker_result[0].boxes,"\n")
+            
+        
         if not ret:
             break  # End
         
-        video_writer.write(frame)
-        if cv2.waitKey(25) & 0xFF == ord('q'):
-            break
-
+        video_writer.write(tracker_result[0].plot())
+        
     # 3. Release
     video_writer.release()
     cap.release()
