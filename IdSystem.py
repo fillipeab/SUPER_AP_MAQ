@@ -41,13 +41,13 @@ class YoloID8n():
         
         tracker_result = self.model.track(
         source=source,  #
-        tracker='strongsort.yaml',  # or 'botsort.yaml'
+        tracker='botsort.yaml',  # or 'botsort.yaml'
         show=True,
         save=True,
         classes=[0],  # Filter classes: 0=person
         conf=0.5,           # Confidence threshold
         iou=0.5,            # IOU threshold
-        device='cuda',      # 'cpu' or 'cuda' (GPU)
+        device='cpu',      # 'cpu' or 'cuda' (GPU)
         verbose=True        # Show logs
         )
         return tracker_result
@@ -68,7 +68,23 @@ class YoloID8n():
 
 
 ### Testing
+
+
+
+
+
 if __name__ == "__main__":
+    ###VideoWriter
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec MP4
+    fps = 30
+    width, height = 1920, 1080
+    video_writer = cv2.VideoWriter(
+        'output_test_video.mp4',
+        fourcc,
+        fps,
+        (width, height)
+    )
+
     id_system = IdSystem()
     test_source = "auxiliares/People_in_line.mp4"
     detections = []
@@ -81,16 +97,16 @@ if __name__ == "__main__":
     while True:
         ret, frame = cap.read()
         detection = id_system(frame) ### checking detection
-        print(detection,"\n")
+        print(detection[0].boxes,"\n")
         if not ret:
             break  # End
-        # show frame
-        cv2.imshow('Video', frame)
         
+        video_writer.write(frame)
         if cv2.waitKey(25) & 0xFF == ord('q'):
             break
 
-    # 3. Release recursos
+    # 3. Release
+    video_writer.release()
     cap.release()
     cv2.destroyAllWindows()
     
