@@ -19,7 +19,6 @@ from PersonDB import PersonDB
 
 @dataclass
 class REIDSystem: ###Just pass to the specified reid system -> or does nothing at all.
-    reid_queue : Queue = field(default_factory=Queue) ###exports edits
     person_db : PersonDB = field(default_factory=PersonDB) ###
     reid_type : str = "dummy"
     reid_in_use : Any
@@ -45,10 +44,11 @@ class CLIP:
     ###Static parameters
     SIMILARITY_THRESHOLD = 0.85
     
-    
-    ###
+    ###External
     person_db : PersonDB
-    person_equivalent_dict : dict = field(default_factory=dict)
+    
+    ###INTERNAL PARAMETER
+    tp_eq_dict : dict = field(default_factory=dict)
     
     def yolo_to_pil(frame,temp_person):
         ###For cutting image out of BBOX
@@ -71,35 +71,42 @@ class CLIP:
         
     
     def __call__(self,frame,list_of_temporary_person):
-        tp_eq_dict = {} ###dictionary that saves the relation of Identifier ID(in temp_person) to Person ID in DB : temporary_persons_equivalence_dictionary(tp_eq_dict)
-        
         ###Get features from all temporary persons in list
         for temp_person in list_of_temporary_person:
-                t_id = temp_person.id
-                features_from_tp = yolo_to_pil(frame,temp_person) ###gets features
+            temp_id = temp_person.id
+            features_from_tp = yolo_to_pil(frame,temp_person) ###Gets features from temporary person
                 
-                """Compare with existing person in db. There is two paths here:
-                1 - The person is already in reid dict, and you must compare with only 1 person.
-                2 - It's not, and a new equivalence must be added, or a new person.
-                """
+            ###Equivalence is already in dict. JUST UPDATE THE FEATURES. DO NOT TRY TO OVERCORRECT THE PROGRAM.
+            if temp_id in self.tp_eq_dict:
+                p_id = self.tp_eq_dict[temp_id] ### gets permanent person id from dict
+                person = self.person_db.get_person_by_id(p_id) ### get person
+                person.features = (person.features+features_from_tp)/2 ###Updates person feature
+            
+            ###Its not in dict. Must compare with people DB.
+            else: 
+                max_similarity = 0
+                person_id = 0
+                ###Check for all people in DB
+                for real_person in self.person_db: 
+                    similarity = compare(real_person.features,features_from_tp)
+                    ###Find person in DB with bigger similarity(over threshold)
+                    if (similarity > SIMILARITY_THRESHOLD) and (similarity > max_similarity):
+                        max_similarity=similarity
+                        person_id = real_person.id
                 
-                if t_id in tp_eq_dict: ###Equivalence is already in dict. JUST UPDATE THE FEATURES. DO NOT TRY TO OVERCORRECT THE PROGRAM.
-                    p_id = tp_eq_dict[t_id] ### gets permanent person id from dict
-                    person = self.person_db.get_person_by_id(p_id) ### get person
+                ###Compare with existing people. Match? Yes
+                if max_similarity>0:
+                    self.tp_eq_dict[temp_id]=person_id ###Keep in mind that two yolo temporary ids may share one person ID. However, it's better to acept that, and fix the similarity comparator, than to try to fix it in the atribution process
+                    person = self.person_db.get_person_by_id(person_id) ### get person
                     person.features = (person.features+features_from_tp)/2 ###Updates person feature
-                else: ###Its not in dict. Must compare with people DB.
-                
-        
-        ###Comparing
-        
-        
-        
-        ###Add to dict
-        
-        
-        
-        
-
-
-
+                    
+                ###Compare with existing people. Match? No
+                else:
+                    new_id = self.person_db.size()+1 ###The size will be equivalent to the number of objects in the db. So, the next id is this number plus one
+                    new_person = Person(new_id,1,features_from_tp)
+                    self.person_db.add(new_person)
+                    self.tp_eq_dict[temp_id] = new_id
 ### Memory edits will be processed at the processManager, to avoid write_over_read
+
+
+

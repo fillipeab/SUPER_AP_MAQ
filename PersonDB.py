@@ -9,9 +9,6 @@ class PersonDB:
     def add(self, item : Person):
         self.stored_persons[Person.id] = Person
     
-    def remove(self, pos : int = -1):
-        self.stored_persons[pos].pop(pos)
-    
     @property
     def size(self):
         return len(self.stored_persons)

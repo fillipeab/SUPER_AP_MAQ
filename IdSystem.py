@@ -10,8 +10,8 @@ from TempPerson import TempPerson
 
 @dataclass
 class IdSystem: ### Ideally, should be able to use more than one model
-    model_type = str = "YoloID8n"
-    model_in_use = Any
+    model_type : str = "YoloID8n"
+    model_in_use : Any
     
     def __post_init__(self): ###Creates the instance of the selected model
         if self.model_type == "YoloID8n": 

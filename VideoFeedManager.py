@@ -41,7 +41,7 @@ class VideoFeedManager:
         self.start()
         return number_of_queues, queues_from_sources
 
-###just testing
+###just testing the atributting of sources
 
 if __name__ == "__main__":
     print("Testing fuctioning")
