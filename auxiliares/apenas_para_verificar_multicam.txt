@@ -1,0 +1,62 @@
+import threading
+from queue import Queue
+
+def camera_worker(cam_id, source, output_queue):
+    """Worker para processar uma câmera"""
+    model = YOLO('yolov8n.pt')
+    cap = cv2.VideoCapture(source)
+    
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+            
+        results = model.track(
+            frame,
+            tracker="strongsort.yaml",
+            persist=True,
+            verbose=False
+        )
+        
+        # Adicionar resultado na fila
+        output_queue.put({
+            'cam_id': cam_id,
+            'frame': results[0].plot(),
+            'tracks': results[0].boxes.id.tolist() if results[0].boxes.id is not None else []
+        })
+    
+    cap.release()
+
+# Gerenciador principal
+class MultiCameraManager:
+    def __init__(self):
+        self.cameras = [
+            (0, 0),  # (ID, source)
+            (1, 'video.mp4')
+        ]
+        self.queue = Queue()
+        self.running = True
+        
+    def start(self):
+        # Iniciar threads
+        for cam_id, source in self.cameras:
+            thread = threading.Thread(
+                target=camera_worker,
+                args=(cam_id, source, self.queue)
+            )
+            thread.daemon = True
+            thread.start()
+        
+        # Processar resultados
+        while self.running:
+            if not self.queue.empty():
+                result = self.queue.get()
+                cv2.imshow(f'Camera {result["cam_id"]}', result['frame'])
+            
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                self.running = False
+        
+        cv2.destroyAllWindows()
+
+
+me explique esse codigo, detalhadamente
