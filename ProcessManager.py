@@ -21,10 +21,17 @@ from VideoFeedManager import VideoFeedManager
 
 @dataclass
 class ProcessManager:
+    """
+    queues_from_sources =>  process_source_to_id(ID_processor(s) (one for each)) => ID_processed_queues
+    ID_processed_queues => process_ID_to_REID_central(1 TO all) => Output_queues ###Were previoulsy called REID_queues.
+    
+    """
     ###Queues
-    queues_from_sources : list = field(default_factory=list) ###Receives from VideoFeedManager
-    ID_processed_queues : list = field(default_factory=list)
-    Output_queues       : list = field(default_factory=list) ### element should have the following format {"frame" : frame, "model_analysis" : model_analysis, "reid_result" : list_of_temporary_person}
+    queues_from_sources   : list = field(default_factory=list) ###Receives from VideoFeedManager
+    ID_processed_queues   : list = field(default_factory=list)
+    REID_processed_queues : list = field(default_factory=list)
+    Output_queues         : list = field(default_factory=list)
+    ### element should have the following format {"frame" : frame, "model_analysis" : model_analysis, "reid_result" : list_of_temporary_person}
     
     ### pos_init variables
     number_ID_queues : int = 0
@@ -58,8 +65,10 @@ class ProcessManager:
     
     def __post_init__(self):
         self.number_ID_queues = self.number_of_queues(self.queues_from_sources)
+        self.number_REID_queues = self.number_of_queues(self.queues_from_sources)
         self.number_output_queues = self.number_of_queues(self.queues_from_sources)
         self.ID_processed_queues = self.create_queues(self.number_ID_queues)
+        self.REID_processed_queues = self.create_queues(self.number_REID_queues)
         self.output_queues = self.create_queues(self.number_output_queues)
     
     def process_source_to_id(self,id_system,pos): ###to the correct position
@@ -78,29 +87,33 @@ class ProcessManager:
             time.sleep(self.SLEEP_TIME)
             for i in range(self.number_ID_queues): ###Check for each one of them
                 local_id_queue = self.ID_processed_queues[i]
-                local_output_queue = self.output_queues[i]
+                local_reid_queue = self.REID_processed_queues[i]
                 if not local_id_queue.empty():
                     element = local_id_queue.get_nowait()
                     frame, model_analysis = element["frame"], element["model_analysis"]
                     list_of_temporary_person = reid_system(frame,model_analysis["temporary_persons"])
                     element["reid_result"] = list_of_temporary_person
-                    local_output_queue.put(element) ### One REID queue for id queue
+                    local_reid_queue.put(element) ### One REID queue for id queue
     
     def skip_REID_central(self):
         while True:
             time.sleep(self.SLEEP_TIME)
             for i in range(self.number_ID_queues): ###Check for each one of them
                 local_id_queue = self.ID_processed_queues[i]
-                local_output_queue = self.output_queues[i]
+                local_reid_queue = self.REID_processed_queues[i]
                 if not local_id_queue.empty(): 
                     element = local_id_queue.get_nowait()
                     element["reid_result"] = element["model_analysis"]["temporary_persons"]
-                    local_output_queue.put(element) ### Just repeats ID output
+                    local_reid_queue.put(element) ### Just repeats ID output
+                    
+    def REID_to_Output(self):
+        ###Initially, there is no need for any conversion, so it's completelly possible to just leave a simple atribution operation. In the future, more operations might be required
+        self.output_queues=self.REID_processed_queues
                     
     def start(self):
         # Iniciar threads
         
-        ###ID threads
+        ### ID ###
         for i in range(self.number_ID_queues):
             id_system = IDSystem(self.ID_SYSTEM) ###creates id system
             thread = threading.Thread(
@@ -109,9 +122,10 @@ class ProcessManager:
             )
             thread.daemon = True ###Doesn't stop the program from ending
             thread.start() ###Create the thread
+        ### End of ID ###
         
-        if self.SKIP_REID == False:
-            ###REID threads        
+        ### REID ###
+        if self.SKIP_REID == False:     
             if self.CENTRAL_REID == True:
                 reid_system = REIDSystem(self.person_db,self.REID_SYSTEM)
                 thread = threading.Thread(
@@ -132,25 +146,35 @@ class ProcessManager:
             )
             thread.daemon = True ###Doesn't stop the program from ending
             thread.start() ###Create the thread
-            
         
+        ### End of REID ###
+        
+        ### REID -> OUTPUT ###
+        self.REID_to_Output()
+
+    ###calling function
     def __call__(self):
         self.start()
-        return self.number_output_queues, self.output_queues
+        return self.number_output_queues, self.queues_from_sources, self.ID_processed_queues, self.REID_processed_queues, self.output_queues
 
 ###just testing the atributting of sources
 
 if __name__ == "__main__":
     queue_index = 0
+    ### video sources
     video_sources=["auxiliares/People_in_line.mp4"]
     video_feed_manager = VideoFeedManager(video_sources=video_sources)
     n_of_sources, queues = video_feed_manager()
+    
+    ### Process manager
     process_manager = ProcessManager(queues_from_sources=queues)
-    video_feed_manager.start()
-    n_out_queues, output_queues = process_manager()
+    
+    ### START ###
+    video_feed_manager()
+    n_out_queues, queues_from_sources, id_processed_queues, reid_processed_queues, output_queues = process_manager()
     
     
-    ###for seeing output
+    ### VIDEO SETTINGS ###
     print("process manager + video feed testing")
     ###VideoWriter
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec MP4
@@ -162,22 +186,58 @@ if __name__ == "__main__":
         fps,
         (width, height)
     )
+    ### VIDEO SETTINGS - END ###
     
+    ### Main loop
     doom_counter = 0
+    doom_flag = 0
     listed_counter = 0
+    waiting_multiplier_normal = 30000 ###static
+    waiting_multiplier = waiting_multiplier_normal
     try:
         while True:
-            time.sleep(process_manager.SLEEP_TIME)
+            time.sleep(process_manager.SLEEP_TIME*waiting_multiplier)
             if not output_queues[queue_index].empty():
                 element = output_queues[queue_index].get_nowait()
                 listed_counter+=1
-                
                 ###get processed image
                 model_analysis = element["model_analysis"]
                 result = model_analysis["result"] ### !!!!!!!!!!!!!!!!!!!!!!! This line is sensitive to the model type !!!!!!!!!!!!!!!!!!!!!!!!!!!
                 video_writer.write(result[0].plot())
-                print ("listed_counter: ",listed_counter)    
-                ###get math result
+                if listed_counter%50 == 0: ###printing takes a lot of time. Do it only for important values
+                    print ("listed_counter: ",listed_counter) ### see if the process is getting to the end
+                
+            ### breaking mechanism ###
+            if doom_counter%5 == 0: ###printing takes a lot of time. Do it only for important values
+                    print (doom_counter) ### see if the process is getting to the end
+            if doom_counter == 1000:
+                try: ###checking for empty queues
+                    if (queues_from_sources[queue_index].empty() and id_processed_queues[queue_index].empty() and
+                    reid_processed_queues[queue_index].empty() and output_queues[queue_index].empty()):
+                        doom_flag+=1
+                        if doom_flag == 1:
+                            print("\nDoom is aproaching\n")
+                        elif doom_flag == 2:
+                            print("\nDoom is INEVITABLE!\n")
+                        elif doom_flag == 3:
+                            print("\nDOOOOOOOOOOM!!!\n")
+                        waiting_multiplier = 1
+                    elif (queues_from_sources[queue_index].empty() and id_processed_queues[queue_index].empty() and
+                    reid_processed_queues[queue_index].empty() and not output_queues[queue_index].empty()): ###which menas that there's only output to process
+                        waiting_multiplier = 1
+                    else:
+                        doom_flag=0
+                        waiting_multiplier = waiting_multiplier_normal
+                except Exception as e:
+                    print("Erro: ",e)
+                    
+                doom_counter = 0 ### reset doom counter
+            doom_counter+=1
+            
+            if doom_flag>=3 :
+                break
+            
+            ### breaking mechanism - end ###
     except KeyboardInterrupt:
         print("interrupted")
     finally:
