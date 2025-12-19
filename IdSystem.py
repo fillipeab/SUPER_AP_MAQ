@@ -9,7 +9,7 @@ from TempPerson import TempPerson
 
 
 @dataclass
-class IdSystem: ### Ideally, should be able to use more than one model
+class IDSystem: ### Ideally, should be able to use more than one model
     model_type : str = "YoloID8n"
     model_in_use : Any
     
@@ -84,7 +84,8 @@ class YoloID8n():
         device='cpu',      # 'cpu' or 'cuda' (GPU)
         verbose=True        # Show logs
         )
-        temporary_persons = ["testing"]
+        temporary_person = TempPerson()
+        temporary_persons = [temporary_person]
         return {"result" : tracker_result, "temporary_persons" : temporary_persons}
 
 
@@ -108,7 +109,7 @@ if __name__ == "__main__":
         (width, height)
     )
 
-    id_system = IdSystem()
+    id_system = IDSystem()
     test_source = "auxiliares/People_in_line.mp4"
     cap = cv2.VideoCapture(test_source)
 
