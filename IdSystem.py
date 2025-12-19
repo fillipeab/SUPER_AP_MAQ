@@ -64,7 +64,7 @@ class YoloID8n():
                 for i in range(len(element.id)): ###Getting the number of detections
                     t_person = TempPerson()
                     t_person.id = element.id[i]
-                    t_person.bb = element.xyxy[i]
+                    t_person.bb = element.xyxy[i] ###Uses the xyxy return from YOLO
                     t_person.confidence = element.conf[i]
                     temporary_persons.append(t_person)
             except:

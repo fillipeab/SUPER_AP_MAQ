@@ -31,8 +31,11 @@ Threads:
 
 """    
 ### Creating management entities
+    ###VIDEO FEED
     vfmanager = VideoFeedManager(sources) ### Start reading the videosources, using multithreading. Also creates queues to export the data
     number_of_queues, queues_from_sources = videofeedmanager() ###  Each queue holds the frames that are there to be read
+    ###PROCESSING
+    
     
 
 
