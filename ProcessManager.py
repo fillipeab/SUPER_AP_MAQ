@@ -35,11 +35,11 @@ class ProcessManager:
     REID_SYSTEM = "mobileCLIP"
     
     ### WILL REID BE CENTRAL?
-    SKIP_REID    : Bool = False
+    SKIP_REID    : Bool = True ### True or False
     CENTRAL_REID : Bool = True
     
     ###SLEEP TIME
-    SLEEP_TIME=0.00001
+    SLEEP_TIME=0.000001
     
     ###Person DB
     person_db : PersonDB = field(default_factory=PersonDB)
@@ -165,25 +165,23 @@ if __name__ == "__main__":
     
     doom_counter = 0
     listed_counter = 0
-    while True:
-        time.sleep(process_manager.SLEEP_TIME)
-        if not output_queues[queue_index].empty():
-            element = output_queues[queue_index].get_nowait()
-            listed_counter+=1
-            
-            ###get processed image
-            model_analysis = element["model_analysis"]
-            result = model_analysis["result"] ### !!!!!!!!!!!!!!!!!!!!!!! This line is sensitive to the model type !!!!!!!!!!!!!!!!!!!!!!!!!!!
-            video_writer.write(result[0].plot())
-            
-            ###get math result
-            doom_counter=0
-        else:
-            doom_counter+=1
-        if doom_counter>100000000000000000:
-            break
-    print ("listed_counter: ",listed_counter)
-    video_writer.release()
-    cv2.destroyAllWindows()
-    os._exit(1)
+    try:
+        while True:
+            time.sleep(process_manager.SLEEP_TIME)
+            if not output_queues[queue_index].empty():
+                element = output_queues[queue_index].get_nowait()
+                listed_counter+=1
+                
+                ###get processed image
+                model_analysis = element["model_analysis"]
+                result = model_analysis["result"] ### !!!!!!!!!!!!!!!!!!!!!!! This line is sensitive to the model type !!!!!!!!!!!!!!!!!!!!!!!!!!!
+                video_writer.write(result[0].plot())
+                print ("listed_counter: ",listed_counter)    
+                ###get math result
+    except KeyboardInterrupt:
+        print("interrupted")
+    finally:
+        video_writer.release()
+        cv2.destroyAllWindows()
+        os._exit(1)
     
