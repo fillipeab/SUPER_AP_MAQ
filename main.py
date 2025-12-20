@@ -21,13 +21,13 @@ def main():
     ###Program variables
     ###phase 1
     first_phase=FirstPhaseManager(sources = video_sources, SLEEP_TIME = SLEEP_TIME, ID_SKIP_FRAME=ID_SKIP_FRAME, REID_SKIP_FRAME=REID_SKIP_FRAME)
-    number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, first_phase_output_queues = first_phase() ###starts phase 1
+    number_output_queues, queues_from_sources, id_processed_queues, reid_processed_queues, first_phase_output_queues = first_phase() ###starts phase 1
     print("phase 1 - running")
     ###phase 2
     second_phase=SecondPhaseManager(SLEEP_TIME=SLEEP_TIME, queues_from_first_phase = first_phase_output_queues)
     output_queues = second_phase()
     print("phase 2 - running")
-    """
+    
     ### Main loop
     doom_counter = 0
     doom_flag = 0
@@ -43,17 +43,17 @@ def main():
                 listed_counter+=1
                 ###get processed image
                 model_analysis = element["model_analysis"]
-                result = model_analysis["result"] ### !!!!!!!!!!!!!!!!!!!!!!! This line is sensitive to the model type !!!!!!!!!!!!!!!!!!!!!!!!!!!
-                videowriter(result[0].plot())
+                """result = model_analysis["result"] ### !!!!!!!!!!!!!!!!!!!!!!! This line is sensitive to the model type !!!!!!!!!!!!!!!!!!!!!!!!!!!
+                videowriter(result[0].plot())"""
                 if listed_counter%50 == 0: ###printing takes a lot of time. Do it only for important values
                     print ("listed_counter: ",listed_counter) ### see if the process is getting to the end
-                    
+               
             ### breaking mechanism ###
             if doom_counter%5 == 0: ###printing takes a lot of time. Do it only for important values
                     print (doom_counter) ### see if the process is getting to the end
             if doom_counter == 1000:
                 try: ###checking for empty queues
-                    if (queues_from_sources[queue_index].empty() and id_processed_queues[queue_index].empty() and
+                    if (queues_from_sources[queue_index].empty() and ID_processed_queues[queue_index].empty() and
                     reid_processed_queues[queue_index].empty() and output_queues[queue_index].empty()):
                         doom_flag+=1
                         if doom_flag == 1:
@@ -81,13 +81,14 @@ def main():
             ### breaking mechanism - end ###
             
     except Exception as e:
-        print("ERRO:" , e)
+        print("ERRO IN MAIN LOOP:" , e)
     except KeyboardInterrupt:
         print("interrupted")
     finally:
         cv2.destroyAllWindows()
         os._exit(1)
-    """
+    
+    ###END OF MAIN###
 
 @dataclass
 class VideoWriter:

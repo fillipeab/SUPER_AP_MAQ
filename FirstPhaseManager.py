@@ -30,7 +30,9 @@ class FirstPhaseManager:
         video_feed_manager=VideoFeedManager(self.sources)
         _, self.queues_from_sources = video_feed_manager() ###Starts video_feed_manager
         process_manager = ProcessManager(queues_from_sources = self.queues_from_sources, ID_SKIP_FRAME = self.ID_SKIP_FRAME, REID_SKIP_FRAME = self.REID_SKIP_FRAME, SLEEP_TIME=self.SLEEP_TIME)
-        number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, self.output_queues = process_manager() #number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, output_queues ###Start process_manager
+        number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, self.output_queues = process_manager() 
+        ###number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, output_queues ###Start process_manager 
+        ### element in output queue should have the following format {"frame" : frame, "model_analysis" : model_analysis, "reid_result" : list_of_temporary_person}
         return number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, self.output_queues
         
         

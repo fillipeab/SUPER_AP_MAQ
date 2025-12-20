@@ -1,4 +1,4 @@
-### Processo 1 da fase 2 - achar fila
+### Process 1, phase 2: find permanence
 from dataclasses import dataclass, field
 from typing import Any
 from TempPerson import TempPerson
@@ -53,6 +53,7 @@ class WatchPermanence():
         ### part 1 - end ###        
         
         ### part 2 - update memory
+        remove_from_p_pc_dict = []
         for key in p_pc_dict:
             p_pc_dict[key]-=1
             ### Maximum limit
@@ -60,14 +61,20 @@ class WatchPermanence():
                 p_pc_dict[key] = LIMIT_SEEN
             ### Minimum limit
             if p_pc_dict[key] < -self.DISCART_THRESHOLD: ###Remove from memory person absent for too long - avoids memory overflow
-                p_pc_dict.pop(key,None)
+                remove_from_p_pc_dict.append(key)
+        ##remove from dict##
+        for key in remove_from_p_pc_dict:
+            p_pc_dict.pop(key,None)
         ### part 2 - end ###
         
         ### part 3 - create an export list of permanent person and remove "forgotten" people
+        remove_from_p_person_dict = []
         for key in p_persons_dict:
             if p_persons_counter_dict[key] > self.EXPORT_THRESHOLD: ###Person seen enough times
                 return_list.append(p_person_dict[key]) ###Adds to export list
             if p_persons_counter_dict[key] < self.OUT_OF_PERMANENCE_THRESHOLD: ###Person absent for too long
-                p_person_dict.pop(key,None)
+                remove_from_p_person_dict.append(key)
+        for key in remove_from_p_person_dict:
+            p_person_dict.pop(key,None)
         ### part 3 - end ###
         return return_list
