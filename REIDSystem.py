@@ -155,7 +155,7 @@ class mobileCLIP(REID_type):
                 
                 ###"Compare with existing people. Match?" Yes
                 if max_similarity>0:
-                    self.tp_eq_dict[temp_id]=person_id ###Add key - does not update, as if the key is present, it DOES NOT correct it!
+                    self.tp_eq_dict[temp_id]=person_id ###Add key
                     ###Keep in mind that two yolo temporary ids may share one person ID. However, it's better to acept that, and fix the similarity comparator, than to try to fix it in the atribution process.
                     person = self.person_db.get_person_by_id(person_id) ### get person
                     person.features = (person.features+features_from_tp)/2 ###Updates person feature
@@ -165,7 +165,7 @@ class mobileCLIP(REID_type):
                 ###"Compare with existing people. Match?" No
                 else:
                     new_id = self.person_db.size ###The size is equivalent to the number of objects in the DB. However, as id counting starts in 0, so this number is also the id of the next element to be added.
-                    new_person = Person(new_id,1,features_from_tp)
+                    new_person = Person(new_id,features_from_tp)
                     self.person_db.add(new_person)
                     self.tp_eq_dict[temp_id] = new_id
                     

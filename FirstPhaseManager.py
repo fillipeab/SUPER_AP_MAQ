@@ -42,7 +42,7 @@ if __name__ == "__main__":
     video_sources=["auxiliares/People_in_line.mp4"]
     first_phase_manager=FirstPhaseManager(sources = video_sources)
     SLEEP_TIME = first_phase_manager.SLEEP_TIME
-    number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, output_queues = first_phase_manager()
+    number_output_queues, queues_from_sources, id_processed_queues, reid_processed_queues, output_queues = first_phase_manager()
     
     
     ### VIDEO SETTINGS ###

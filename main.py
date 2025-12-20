@@ -53,7 +53,7 @@ def main():
                     print (doom_counter) ### see if the process is getting to the end
             if doom_counter == 1000:
                 try: ###checking for empty queues
-                    if (queues_from_sources[queue_index].empty() and ID_processed_queues[queue_index].empty() and
+                    if (queues_from_sources[queue_index].empty() and id_processed_queues[queue_index].empty() and
                     reid_processed_queues[queue_index].empty() and output_queues[queue_index].empty()):
                         doom_flag+=1
                         if doom_flag == 1:

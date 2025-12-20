@@ -83,15 +83,16 @@ class SecondProcessManager(): ###Allow for best integration of all steps
 
     def __call__(self, list_of_temporary_person : list):
         result_list = []
-        if counter % (SKIP_PERMANENCE+1) == 0:
+        if self.counter % (self.SKIP_PERMANENCE+1) == 0:
             return_from_watch_permanence = self.watch_permanence(list_of_temporary_person)
-            if counter % (SKIP_PERMANENCE*SKIP_MOVEMENT+1) == 0:
+            """
+            if self.counter % (self.SKIP_PERMANENCE*self.SKIP_MOVEMENT+1) == 0:
                 return_from_watch_movement = self.watch_movement(return_from_watch_permanence)
-                if counter % (SKIP_PERMANENCE*SKIP_MOVEMENT*SKIP_LINE+1) == 0:
+                if self.counter % (self.SKIP_PERMANENCE*self.SKIP_MOVEMENT*self.SKIP_LINE+1) == 0:
                     return_from_line = self.watch_line(return_from_watch_movement)
-                    
+            """        
                 
-        counter+=1
+        self.counter+=1
         ### por hora ###
         result_list=return_from_watch_permanence
         return result_list
