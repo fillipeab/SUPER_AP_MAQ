@@ -6,7 +6,9 @@ from PersonDB import PersonDB
 from MemorySystem import MemorySystem
 from VideoFeedManager import VideoFeedManager
 from ProcessManager import ProcessManager
-
+import os
+import time
+import cv2
 
 
 
@@ -14,10 +16,10 @@ from ProcessManager import ProcessManager
 
 @dataclass
 class FirstPhase:
+    sources             : list = field(default_factory=list)
     ID_SKIP_FRAME       : int = 0
     REID_SKIP_FRAME     : int = 4
     SLEEP_TIME          : float = 0.000001
-	sources             : list = field(default_factory=list)
     queues_from_sources : list = field(default_factory=list)
     output_queues       : list = field(default_factory=list)
     video_feed_manager  : VideoFeedManager = None
@@ -33,8 +35,10 @@ class FirstPhase:
         
 
 if __name__ == "__main__":
+    queue_index = 0
     video_sources=["auxiliares/People_in_line.mp4"]
-    first_phase=FirstPhase(video_sources)
+    first_phase=FirstPhase(sources = video_sources)
+    SLEEP_TIME = first_phase.SLEEP_TIME
     number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, output_queues = first_phase()
     
     
@@ -60,7 +64,7 @@ if __name__ == "__main__":
     waiting_multiplier = waiting_multiplier_normal
     try:
         while True:
-            time.sleep(first_phase.process_manager.SLEEP_TIME*waiting_multiplier)
+            time.sleep(SLEEP_TIME*waiting_multiplier)
             if not output_queues[queue_index].empty():
                 element = output_queues[queue_index].get_nowait()
                 listed_counter+=1
@@ -104,6 +108,8 @@ if __name__ == "__main__":
             ### breaking mechanism - end ###
     except KeyboardInterrupt:
         print("interrupted")
+    except Exception as e:
+        print(e)
     finally:
         video_writer.release()
         cv2.destroyAllWindows()

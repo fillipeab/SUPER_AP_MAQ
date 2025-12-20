@@ -1,10 +1,4 @@
-import threading
 import os
-from queue import Queue
-from typing import Any
-from dataclasses import dataclass, field
-
-
 ### The objective os this class is to implement a system that does all the processing of the ID part, and the REID part. We will leave the writing part to the MemoryManager(do not confuse with the MemorySystem).
 import threading
 import time
@@ -40,8 +34,8 @@ class ProcessManager:
     ###SKIP process?###
     ID_COUNTER      = 0
     REID_COUNTER    = 0
-    ID_SKIP_FRAME   = 0 ### Number of frames that will be skipped - CANNOT BE NEGATIVE
-    REID_SKIP_FRAME = 4 ### Number of frames that will be skipped - CANNOT BE NEGATIVE
+    ID_SKIP_FRAME   : int = 0 ### Number of frames that will be skipped - CANNOT BE NEGATIVE
+    REID_SKIP_FRAME : int = 4 ### Number of frames that will be skipped - CANNOT BE NEGATIVE
     
     ###ID AND REID
     ID_SYSTEM = "YoloID8n"
@@ -52,7 +46,7 @@ class ProcessManager:
     CENTRAL_REID : Bool = True
     
     ###SLEEP TIME
-    SLEEP_TIME=0.000001
+    SLEEP_TIME   : float = 0.000001
     
     ###Person DB
     person_db : PersonDB = field(default_factory=PersonDB)
@@ -76,9 +70,9 @@ class ProcessManager:
         self.ID_processed_queues = self.create_queues(self.number_ID_queues)
         self.REID_processed_queues = self.create_queues(self.number_REID_queues)
         self.output_queues = self.create_queues(self.number_output_queues)
-        if self.ID_SKIP_FRAME<0:
+        if self.ID_SKIP_FRAME < 0:
             self.ID_SKIP_FRAME=0
-        if self.REID_SKIP_FRAME<0:
+        if self.REID_SKIP_FRAME < 0:
             self.REID_SKIP_FRAME=0
     
     def process_source_to_id(self,id_system,pos): ###to the correct position
@@ -174,7 +168,8 @@ class ProcessManager:
         ###end###
 
     ###calling function
-    def __call__(self): """Returns : self.number_output_queues, self.queues_from_sources, self.ID_processed_queues, self.REID_processed_queues, self.output_queues"""
+    """Returns : self.number_output_queues, self.queues_from_sources, self.ID_processed_queues, self.REID_processed_queues, self.output_queues"""
+    def __call__(self):
         self.start()
         return self.number_output_queues, self.queues_from_sources, self.ID_processed_queues, self.REID_processed_queues, self.output_queues
 
