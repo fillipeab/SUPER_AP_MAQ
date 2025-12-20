@@ -15,7 +15,7 @@ import cv2
 ### In the state that the program is now, it's not needed to have a memory_system. However, it's useful to have one central entity that might alocate more DBs. This configuration makes it easier to deal with it, and even create extra DBs.
 
 @dataclass
-class FirstPhase:
+class FirstPhaseManager:
     sources             : list = field(default_factory=list)
     ID_SKIP_FRAME       : int = 0
     REID_SKIP_FRAME     : int = 4
@@ -37,9 +37,9 @@ class FirstPhase:
 if __name__ == "__main__":
     queue_index = 0
     video_sources=["auxiliares/People_in_line.mp4"]
-    first_phase=FirstPhase(sources = video_sources)
-    SLEEP_TIME = first_phase.SLEEP_TIME
-    number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, output_queues = first_phase()
+    first_phase_manager=FirstPhaseManager(sources = video_sources)
+    SLEEP_TIME = first_phase_manager.SLEEP_TIME
+    number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, output_queues = first_phase_manager()
     
     
     ### VIDEO SETTINGS ###

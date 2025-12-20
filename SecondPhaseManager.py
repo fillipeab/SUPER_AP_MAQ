@@ -38,13 +38,13 @@ class SecondPhaseManager(): ### Way more linear than phase 1
     
     def start(self):
     # Iniciar threads
-    for i in range(self.second_process_managers):
-        thread = threading.Thread(
+        for i in range(self.second_process_managers):
+            thread = threading.Thread(
             target=self.run_second_process,
             args=(i,) ###args are the source, and the queue
-        )
-        thread.daemon = True ###Doesn't stop the program from ending
-        thread.start() ###Create the thread
+            )
+            thread.daemon = True ###Doesn't stop the program from ending
+            thread.start() ###Create the thread
     
     def __call__(self):
         self.start()

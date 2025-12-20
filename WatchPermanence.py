@@ -10,7 +10,7 @@ Output: List of permanent people
 """
 
 @dataclass
-class WatchPermanent():
+class WatchPermanence():
     permanent_persons_counter_dict : dict[int,int] = field(default_factory=dict) ###dict with key -> times seen
     permanent_persons_dict : dict[int,TempPerson] = field(default_factory=dict)
     LIMIT_SEEN = 10;
