@@ -8,17 +8,33 @@ import cv2
 
 ### começo
 def main():
+    ###video parameters
+    videowriter=VideoWriter(output_file='output.mp4')
+    video_sources=["auxiliares/People_in_line.mp4"]
+    
+    ###running parameters
+    queue_index         = 0  ###queue that will be watched
     SLEEP_TIME          = 0.000001
     ID_SKIP_FRAME       = 0
     REID_SKIP_FRAME     = 4
-    videowriter=VideoWriter(output_file='output.mp4')
-    video_sources=["auxiliares/People_in_line.mp4"]
+    
+    ###Program variables
     ###phase 1
-    first_phase=FirstPhase(sources = video_sources, SLEEP_TIME = SLEEP_TIME, ID_SKIP_FRAME=ID_SKIP_FRAME, REID_SKIP_FRAME=REID_SKIP_FRAME)
-    number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, output_queues_first_phase = first_phase() ###starts phase 1
+    first_phase=FirstPhaseManager(sources = video_sources, SLEEP_TIME = SLEEP_TIME, ID_SKIP_FRAME=ID_SKIP_FRAME, REID_SKIP_FRAME=REID_SKIP_FRAME)
+    number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, first_phase_output_queues = first_phase() ###starts phase 1
+    print("phase 1 - running")
     ###phase 2
-    second_phase=SecondPhaseManager(SLEEP_TIME=SLEEP_TIME, queues_from_first_phase = output_queues_first_phase)
-
+    second_phase=SecondPhaseManager(SLEEP_TIME=SLEEP_TIME, queues_from_first_phase = first_phase_output_queues)
+    output_queues = second_phase()
+    print("phase 2 - running")
+    """
+    ### Main loop
+    doom_counter = 0
+    doom_flag = 0
+    listed_counter = 0
+    waiting_multiplier_normal = 30000 ###static
+    waiting_multiplier = waiting_multiplier_normal
+    
     try:
         while True:
             time.sleep(SLEEP_TIME*waiting_multiplier)
@@ -31,7 +47,7 @@ def main():
                 videowriter(result[0].plot())
                 if listed_counter%50 == 0: ###printing takes a lot of time. Do it only for important values
                     print ("listed_counter: ",listed_counter) ### see if the process is getting to the end
-                
+                    
             ### breaking mechanism ###
             if doom_counter%5 == 0: ###printing takes a lot of time. Do it only for important values
                     print (doom_counter) ### see if the process is getting to the end
@@ -63,12 +79,15 @@ def main():
                 break
             
             ### breaking mechanism - end ###
+            
+    except Exception as e:
+        print("ERRO:" , e)
     except KeyboardInterrupt:
         print("interrupted")
     finally:
         cv2.destroyAllWindows()
         os._exit(1)
-
+    """
 
 @dataclass
 class VideoWriter:
@@ -97,4 +116,7 @@ class VideoWriter:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        print(e)

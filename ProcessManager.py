@@ -25,7 +25,7 @@ class ProcessManager:
     ID_processed_queues   : list = field(default_factory=list) ###Internal
     REID_processed_queues : list = field(default_factory=list) ###Internal
     Output_queues         : list = field(default_factory=list) ###External
-    ### element should have the following format {"frame" : frame, "model_analysis" : model_analysis, "reid_result" : list_of_temporary_person}
+    ### element in output queue should have the following format {"frame" : frame, "model_analysis" : model_analysis, "reid_result" : list_of_temporary_person}
     
     ### pos_init variables
     number_ID_queues : int = 0

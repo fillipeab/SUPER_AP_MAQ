@@ -21,7 +21,8 @@ class FirstPhaseManager:
     REID_SKIP_FRAME     : int = 4
     SLEEP_TIME          : float = 0.000001
     queues_from_sources : list = field(default_factory=list)
-    output_queues       : list = field(default_factory=list)
+    output_queues       : list = field(default_factory=list)     
+    ### element in output queue should have the following format {"frame" : frame, "model_analysis" : model_analysis, "reid_result" : list_of_temporary_person}
     video_feed_manager  : VideoFeedManager = None
     process_manager     : ProcessManager   = None
     
