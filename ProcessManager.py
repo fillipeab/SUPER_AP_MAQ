@@ -149,10 +149,11 @@ class ProcessManager:
         reid_system = ""
         thread_target = 0
         if self.SKIP_REID == False:
-            thread_target = self.process_ID_to_REID_central
             if self.CENTRAL_REID == True:
-            reid_system = REIDSystem(self.person_db,self.REID_SYSTEM)
+                thread_target = self.process_ID_to_REID_central
+                reid_system = REIDSystem(self.person_db,self.REID_SYSTEM)
             else:
+                thread_target=self.skip_REID_central
                 pass ###not implemented yet
         else:
             thread_target=self.skip_REID_central
