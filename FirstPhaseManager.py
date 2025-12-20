@@ -5,36 +5,28 @@ from dataclasses import dataclass, field
 from PersonDB import PersonDB
 from MemorySystem import MemorySystem
 from VideoFeedManager import VideoFeedManager
+from ProcessManager import ProcessManager
 
 
 
-
-### External attributes
-ext_sources = []
 
 ### In the state that the program is now, it's not needed to have a memory_system. However, it's useful to have one central entity that might alocate more DBs. This configuration makes it easier to deal with it, and even create extra DBs.
-memory_system = MemorySystem() ###Creating the memory_system
-memory_system() ### creating 1 PersonDB
-
 
 @dataclass
 class FirstPhase:
-	sources : list = ext_sources
-
-### A little fluxogram of FirstPhase
-"""
-VideoFeedManager(vfmanager) ----queues_from_sources[frames]---->ProcessingManager-----queues_from_processing[temp_person(s) by frame]------> queue_out_FirstPhase
-Threads: 
-- vfmanager(1 for each video)
-- processing manager (2 for each video(1 for identifier_system, 1 for REID))
-- this phase itself might benefit from using 1 specific thread
-
-"""    
-### Creating management entities
-    ###VIDEO FEED
-    vfmanager = VideoFeedManager(sources) ### Start reading the videosources, using multithreading. Also creates queues to export the data
-    number_of_queues, queues_from_sources = videofeedmanager() ###  Each queue holds the frames that are there to be read
-    ###PROCESSING
+	sources             : list = field(default_factory=list)
+    queues_from_sources : list = field(default_factory=list)
+    output_queues       : list = field(default_factory=list)
+    video_feed_manager  : VideoFeedManager = None
+    process_manager     : ProcessManager   = None
+    
+    def __call__(self):
+        video_feed_manager=VideoFeedManager(sources)
+        _, self.queues_from_sources = video_feed_manager() ###Starts video_feed_manager
+        process_manager = ProcessManager(self.queues_from_sources)
+        _, _, _, _, self.output_queues = process_manager() #number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, output_queues ###Start process_manager
+        
+    
     
     
 

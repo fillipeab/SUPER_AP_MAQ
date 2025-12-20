@@ -28,14 +28,20 @@ class ProcessManager:
     """
     ###Queues
     queues_from_sources   : list = field(default_factory=list) ###Receives from VideoFeedManager
-    ID_processed_queues   : list = field(default_factory=list)
-    REID_processed_queues : list = field(default_factory=list)
-    Output_queues         : list = field(default_factory=list)
+    ID_processed_queues   : list = field(default_factory=list) ###Internal
+    REID_processed_queues : list = field(default_factory=list) ###Internal
+    Output_queues         : list = field(default_factory=list) ###External
     ### element should have the following format {"frame" : frame, "model_analysis" : model_analysis, "reid_result" : list_of_temporary_person}
     
     ### pos_init variables
     number_ID_queues : int = 0
     number_output_queues : int = 0
+    
+    ###SKIP process?###
+    ID_COUNTER      = 0
+    REID_COUNTER    = 0
+    ID_SKIP_FRAME   = 0 ### Number of frames that will be skipped - CANNOT BE NEGATIVE
+    REID_SKIP_FRAME = 4 ### Number of frames that will be skipped - CANNOT BE NEGATIVE
     
     ###ID AND REID
     ID_SYSTEM = "YoloID8n"
@@ -70,6 +76,10 @@ class ProcessManager:
         self.ID_processed_queues = self.create_queues(self.number_ID_queues)
         self.REID_processed_queues = self.create_queues(self.number_REID_queues)
         self.output_queues = self.create_queues(self.number_output_queues)
+        if self.ID_SKIP_FRAME<0:
+            self.ID_SKIP_FRAME=0
+        if self.REID_SKIP_FRAME<0:
+            self.REID_SKIP_FRAME=0
     
     def process_source_to_id(self,id_system,pos): ###to the correct position
         local_source_queue = self.queues_from_sources[pos]
@@ -78,8 +88,11 @@ class ProcessManager:
             time.sleep(self.SLEEP_TIME)
             if not local_source_queue.empty():
                 frame = local_source_queue.get_nowait()
-                model_analysis = id_system(frame)
-                local_id_queue.put({"frame": frame, "model_analysis" : model_analysis})
+                if self.ID_COUNTER % (self.ID_SKIP_FRAME+1) == 0:
+                    model_analysis = id_system(frame)
+                    local_id_queue.put({"frame": frame, "model_analysis" : model_analysis})
+                    self.ID_COUNTER=0
+                self.ID_COUNTER+=1
     
     
     def process_ID_to_REID_central(self,reid_system): ###Central because it is one to each source. In the future, other architecture might be implemented 
@@ -90,12 +103,15 @@ class ProcessManager:
                 local_reid_queue = self.REID_processed_queues[i]
                 if not local_id_queue.empty():
                     element = local_id_queue.get_nowait()
-                    frame, model_analysis = element["frame"], element["model_analysis"]
-                    list_of_temporary_person = reid_system(frame,model_analysis["temporary_persons"])
-                    element["reid_result"] = list_of_temporary_person
-                    local_reid_queue.put(element) ### One REID queue for id queue
+                    if self.REID_COUNTER % (self.REID_SKIP_FRAME+1) == 0:
+                        frame, model_analysis = element["frame"], element["model_analysis"]
+                        list_of_temporary_person = reid_system(frame,model_analysis["temporary_persons"])
+                        element["reid_result"] = list_of_temporary_person
+                        local_reid_queue.put(element) ### One REID queue for id queue
+                        self.REID_COUNTER=0
+                    self.REID_COUNTER+=1
     
-    def skip_REID_central(self):
+    def skip_REID_central(self,reid_system):
         while True:
             time.sleep(self.SLEEP_TIME)
             for i in range(self.number_ID_queues): ###Check for each one of them
@@ -103,8 +119,11 @@ class ProcessManager:
                 local_reid_queue = self.REID_processed_queues[i]
                 if not local_id_queue.empty(): 
                     element = local_id_queue.get_nowait()
-                    element["reid_result"] = element["model_analysis"]["temporary_persons"]
-                    local_reid_queue.put(element) ### Just repeats ID output
+                    if self.REID_COUNTER % (self.REID_SKIP_FRAME+1) == 0:
+                        element["reid_result"] = element["model_analysis"]["temporary_persons"]
+                        local_reid_queue.put(element) ### Just repeats ID output
+                        self.REID_COUNTER=0
+                    self.REID_COUNTER+=1
                     
     def REID_to_Output(self):
         ###Initially, there is no need for any conversion, so it's completelly possible to just leave a simple atribution operation. In the future, more operations might be required
@@ -125,35 +144,36 @@ class ProcessManager:
         ### End of ID ###
         
         ### REID ###
-        if self.SKIP_REID == False:     
+        
+        ###chosing reid_system
+        reid_system = ""
+        thread_target = 0
+        if self.SKIP_REID == False:
+            thread_target = self.process_ID_to_REID_central
             if self.CENTRAL_REID == True:
-                reid_system = REIDSystem(self.person_db,self.REID_SYSTEM)
-                thread = threading.Thread(
-                    target=self.process_ID_to_REID_central,
-                    args=(reid_system,) ###args are the source, and the queue
-                )
-                thread.daemon = True ###Doesn't stop the program from ending
-                thread.start() ###Create the thread
+            reid_system = REIDSystem(self.person_db,self.REID_SYSTEM)
             else:
                 pass ###not implemented yet
-        
-        
-        ### Useful for testing ID without REID
         else:
-            thread = threading.Thread(
-            target=self.skip_REID_central,
-            args=() ###args are the source, and the queue
-            )
-            thread.daemon = True ###Doesn't stop the program from ending
-            thread.start() ###Create the thread
+            thread_target=self.skip_REID_central
+        ###end###   
         
+        ###threading
+        thread = threading.Thread(
+        target=thread_target,
+        args=(reid_system,) ###args are the source, and the queue
+        )
+        thread.daemon = True ###Doesn't stop the program from ending
+        thread.start() ###Create the thread
         ### End of REID ###
         
         ### REID -> OUTPUT ###
         self.REID_to_Output()
+        
+        ###end###
 
     ###calling function
-    def __call__(self):
+    def __call__(self): """Returns : self.number_output_queues, self.queues_from_sources, self.ID_processed_queues, self.REID_processed_queues, self.output_queues"""
         self.start()
         return self.number_output_queues, self.queues_from_sources, self.ID_processed_queues, self.REID_processed_queues, self.output_queues
 
