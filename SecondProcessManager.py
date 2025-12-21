@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Any, Tuple
 from PermanenceWatcher import PermanenceWatcher
 from MovementWatcher import MovementWatcher
-
+from LineWatcher import LineWatcher
 
 
 @dataclass
@@ -11,7 +11,7 @@ class SecondProcessManager(): ###Allow for best integration of all steps
     ### permanence_watcher -> movement_watcher -> watch_line -> skipper_buster
     permanence_watcher      : PermanenceWatcher = field(default_factory=PermanenceWatcher)
     movement_watcher        : MovementWatcher   = field(default_factory=MovementWatcher)
-    line_watcher            : LineWatcher       
+    line_watcher            : LineWatcher       = field(default_factory=LineWatcher)   
     SKIP_PERMANENCE         : int   = 0
     SKIP_MOVEMENT           : int   = 0
     SKIP_LINE               : int   = 0

@@ -27,7 +27,7 @@ from TempPerson import TempPerson
 
 
 @dataclass
-class LineWatcher_neighbour(): ###Needs way more work, and maybe it's not the best
+class LineWatcher(): ###Needs way more work, and maybe it's not the best
     ### receives the list of people
     PERCENT_CUT_TRIM_MEAN         : float = 0.1
     NEIGHBOUR_MAX_RADIUS_DISTANCE : float = 1   ###How distance, in smaller_axis value, can a neighbour be - This will be passed to find_nearest_neighbors

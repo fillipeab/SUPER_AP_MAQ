@@ -4,6 +4,7 @@ import numpy as np
 import os
 import time
 import cv2
+import gc
 from TempPerson import TempPerson
 from FirstPhaseManager import FirstPhaseManager
 from SecondPhaseManager import SecondPhaseManager
@@ -124,6 +125,7 @@ def main():
                 ###prints how many outputs we already have
                 if listed_counter%50 == 0: ###printing takes a lot of time. Do it only for important values
                     print ("listed_counter: ",listed_counter) ### see if the process is getting to the end
+                    gc.collect()
             
 
             
