@@ -1,14 +1,10 @@
 import cv2
 import torch
-import numpy as np
 from dataclasses import dataclass, field
 from typing import Any, ClassVar
-import threading
-from queue import Queue
 from typing import Any
 ### For using in CLIP
 from PIL import Image
-import clip
 import mobileclip
 
 from TempPerson import TempPerson
