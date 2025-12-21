@@ -1,22 +1,56 @@
 ###LINE WATCHER - THE END OF OUR JORNEY
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal, Tuple
 from scipy.stats import trim_mean
 from scipy.spatial import cKDTree
+import torch
 import numpy as np
+from ultralytics.utils.metrics import bbox_iou
+from TempPerson import TempPerson
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 @dataclass
-class LineWatcher():
+class LineWatcher_neighbour(): ###Needs way more work, and maybe it's not the best
     ### receives the list of people
-    NEIGHBOUR_MAX_RADIUS_DISTANCE : int   = 1   ###How distance, in smaller_axis value, can a neighbour be - This will be passed to find_nearest_neighbors
     PERCENT_CUT_TRIM_MEAN         : float = 0.1
+    NEIGHBOUR_MAX_RADIUS_DISTANCE : int   = 1   ###How distance, in smaller_axis value, can a neighbour be - This will be passed to find_nearest_neighbors
+    ERASE_FROM_DICT_TIMEOUT       : int   = 180 ###Remember, that means the number of runs to erase an entry
+    people_neighbour_id_dict      : dict  = field(default_factory=dict) ###List to remember people and their neighbours
+    people_timeout_dict           : dict  = field(default_factory=dict) ###Timeout to erasure
+    previous_number_of_people_in_line       : int = 0
+    ###PROBABILITY_SKIPPER_
+    PS_MORE_PEOPLE_IN_LINE  : float = 0.2  ###If there's more people
+    PS_NOT_NEAR_BORDER      : float = 0.2  ###If there's more people, and in the middle, the change is big
+    PS_NEIGHBOUR_DISRUPTION : float = 0.5  ##must happen
+    PS_CONFIRMED_SKIPPER    : float = 0.60 ###at least 2 to be considered. More people in line is a heavy indicator. But needs the other 2
     
-    
-    
-    
+    BOLD_INTERNAL_SKIPPER         : float = 0.25 
+    ###Keep in mind, this is only possible if
+    ### neighbours       - percent if they change all neighbours
+    ### 1 neighbour     - 50%
+    ### 2 neighbours    - 33%
+    ### 3 neighbours    - 25%
+
     ###static method
     @staticmethod
-    def find_nearest_neighbors_by_radius(list_of_temporary_people, radius=50):
+    def calculate_neighbourhood(list_of_temporary_people, radius=50):
         # Array com: [x_center, y_center, person_id]
         centers_with_ids = np.array([
             [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2, person.id]
@@ -33,15 +67,18 @@ class LineWatcher():
             person_id = int(row[2])  # ID
             
             indices = tree.query_ball_point(center, radius)
-            indices.remove(i)
+
+            ###indices.remove(i) - person is neighbour of themselves
             
             # Pega IDs dos vizinhos
-            neighbors_ids = [int(centers_with_ids[idx][2]) for idx in indices]
+            neighbors_ids = torch.tensor([int(centers_with_ids[idx][2]) for idx in indices])
             neighbors_by_id[person_id] = neighbors_ids
         
         return neighbors_by_id
     
-    def find_smaller_axis_of_people(self, list_of_temporary_people, percent_cut = self.PERCENT_CUT_TRIM_MEAN):
+    def calculate_smaller_axis_average(self,list_of_temporary_people, percent_cut = 0):
+        if percent_cut == 0:
+            percent_cut = self.PERCENT_CUT_TRIM_MEAN
         smaller_dimension_list = []
         for person in list_of_temporary_people:
             bbox = person.bb ###Its in x1,y1,x2,y2 format
@@ -54,29 +91,60 @@ class LineWatcher():
         trim_mean(smaller_dimension_list, percent_cut) ###Finds the mean, cutting extremes
     
     
-    def __call__(list_of_temporary_people): ###LineWatcher is called
+    def is_near_border(self, bbox, frame_shape, margin_percent=0.05):
         """
-        Processing order
-        0 - dict is empty - just adds everyone to dict, and their neighbours
-        1 - check neighbours
-        1.1 - runs the check neighbours
-        1.2 - updates old people
-        1.3 - NEW_PEOPLE -> time to check for line skippers - activate line checking
-        2.1 - Is there more people? Yes => follows to 2.2. No -> skips
-        2.2 - Is near corner? No => Line_skipper_prob + 0.2
-        2.3 - 
-        2.4 - Neighbours gained/average_number_of_neighbours from neighbours
-        --this step is very important. It compares the number of neighbours gained sudenly with the number of number of neighbours of his neighbours. That is, checks if he is near "known" people, that already had a lot of neighbours.
-        3.1 - Adds new people to dict, with neighbours
-        Think of a line:
-        D -> C -> B -> A| oclusion at the end
-        E -> D -> C -> B|
-        --now, compares E with D. D is close to B, C and E. So its gains are only small.
-        --now, think about if E skips between C and B:
-        D -> C -> E -> B|
-        --E knows B. B, an "old"/"known" person in line, knows A, C and D. See that E is getting to know a big number of people. Maybe more than
-
-
-
-        4.1 - Checks for Internal Agents - that is, people that WERE in line, but skipped to another place
+        Check if bbox [x1,y1,x2,y2] is near frame border.
+        bbox: [x1, y1, x2, y2]
+        frame_shape: (height, width) from frame.shape[:2]
+        margin_percent: border margin as fraction (0.0 to 0.5)
+        bool: True if near any border
         """
+        h, w = frame_shape[:2]
+        margin = int(min(h, w) * margin_percent)
+        
+        x1, y1, x2, y2 = bbox
+        return (x1 <= margin or x2 >= w - margin or 
+                y1 <= margin or y2 >= h - margin)
+
+
+
+    def __call__(self,list_of_temporary_people : list[TempPerson], frame_shape : Tuple[int,...] = (720, 1280, 3)): ###LineWatcher is called
+        return_dict : dict[int, Literal["skipper", "in line", "wait"]]  = {}
+        ### 0 - calculate neighbourhood ###
+        average_min_distance = self.calculate_smaller_axis_average(list_of_temporary_people,0.2)
+        new_neighbourhood_dict = self.calculate_neighbourhood(list_of_temporary_people, average_min_distance*self.NEIGHBOUR_MAX_RADIUS_DISTANCE)
+        ### 1 - check list - get new people ###
+        new_people = []
+        for temp_person in list_of_temporary_people:
+            t_id=temp_person.id
+            if t_id not in self.people_timeout_dict:
+                new_people.append(temp_person)
+            else: ###old people in dict
+                ###compare to find internal line skipers - only the bold ones
+                old_neighbour = self.people_neighbour_id_dict[t_id]
+                bbox_iou(old_neighbour[t_id],new_neighbourhood_dict[t_id])
+                if bbox_iou < self.BOLD_INTERNAL_SKIPPER:
+                    ###FOUND A BOLD ONE
+                    return_dict[t_id] = "skipper"
+                else:
+                    pass
+            self.people_neighbour_id_dict[t_id] = new_neighbourhood_dict[t_id] ### Adds/updates neighbourhood
+            self.people_timeout_dict[t_id] = self.ERASE_FROM_DICT_TIMEOUT ### Anyone has the timeout redifined
+            
+        ###End of 1###
+        ### new people localized ###
+        number_people_in_line = len(list_of_temporary_people)
+        if new_people:
+            base_skipping_probability = 0
+            ###check if the number of people in line changed
+            if number_people_in_line > self.previous_number_of_people_in_line:
+                base_skipping_probability+=self.PS_MORE_PEOPLE_IN_LINE
+            for temp_person in list_of_temporary_people:
+                skipping_probability += base_skipping_probability
+                if not self.is_near_border(temp_person.bb,frame_shape): ###se nao for, + chance de ser um fura fila
+                    skipping_probability += self.PS_NOT_NEAR_BORDER
+                ### Calculating neighbourhood disruption
+
+
+        ###Finally, updates variables
+        self.previous_number_of_people_in_line=number_people_in_line

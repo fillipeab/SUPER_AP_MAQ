@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Tuple
 from PermanenceWatcher import PermanenceWatcher
 from MovementWatcher import MovementWatcher
 
@@ -16,20 +16,18 @@ class SecondProcessManager(): ###Allow for best integration of all steps
     SKIP_LINE               : int   = 0
     counter                 : int   = 0
 
-    def __call__(self, list_of_temporary_person : list):
+    def __call__(self, list_of_temporary_person : list, frame_shape : Tuple[int,...]):
         return_from_permanence_watcher = []
         return_from_movement_watcher = []
-        return_from_line = []
+        return_from_line_watcher = []
         if self.counter % (self.SKIP_PERMANENCE+1) == 0:
             return_from_permanence_watcher = self.permanence_watcher(list_of_temporary_person)
             if self.counter % ((self.SKIP_PERMANENCE*self.SKIP_MOVEMENT)+1) == 0:
                 return_from_movement_watcher = self.movement_watcher(return_from_permanence_watcher)
                 self.counter=0
-                """
                 if self.counter % (self.SKIP_PERMANENCE*self.SKIP_MOVEMENT*self.SKIP_LINE+1) == 0:
-                    return_from_line = self.watch_line(return_from_movement_watcher)
-            """        
+                    return_from_line_watcher = self.watch_line(return_from_movement_watcher,frame_shape)
                 
         self.counter+=1
         ### por hora ###
-        return return_from_permanence_watcher, return_from_movement_watcher, return_from_line
+        return return_from_permanence_watcher, return_from_movement_watcher, return_from_line_watcher

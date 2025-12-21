@@ -16,7 +16,7 @@ class MovementWatcher:
     DISCART_THRESHOLD              : int     = -5
     SAME_PLACE_IOU                 : float   = 0.1 ### IoU that defines someone that hasn't moved
     CYCLES_TO_UPDATE_POS           : int     = 240 ### IF 60 FPS, this is just 2 seconds
-    CYCLES_TO_FORGET_MOVE          : int     = 1200 ###Number of frames before forgeting the old position and movement direction
+    CYCLES_TO_FORGET_MOVE          : int     = 720 ###Number of frames before forgeting the old position and movement direction
     LIMIT_SEEN_COUNTER             : int     = 10
 
     def __call__(self, list_from_WP : list[TempPerson]): ###list_of_temporary_people_from_PermanenceWatcher

@@ -22,7 +22,7 @@ class SecondPhaseManager(): ### Way more linear than phase 1
     "reid_result" : list_of_temporary_person,    
     "return_from_permanence_watcher" : return_from_permanence_watcher,
     "return_from_movement_watcher" : return_from_movement_watcher,
-    "return_from_line" : return_from_line}
+    "return_from_line_watcher" : return_from_line_watcher}
     """
     queues_from_first_phase : list = field(default_factory=list) ###Receives from first phase
     second_process_managers : list = field(default_factory=list) ###Internal
@@ -46,10 +46,10 @@ class SecondPhaseManager(): ### Way more linear than phase 1
             if not local_queue.empty():
                 element = local_queue.get_nowait()
                 list_of_temporary_person = element["reid_result"]
-                return_from_permanence_watcher, return_from_movement_watcher, return_from_line = local_second_process_manager(list_of_temporary_person)
+                return_from_permanence_watcher, return_from_movement_watcher, return_from_line_watcher = local_second_process_manager(list_of_temporary_person)
                 element["return_from_permanence_watcher"] = return_from_permanence_watcher
                 element["return_from_movement_watcher"] = return_from_movement_watcher
-                element["return_from_line"] = return_from_line
+                element["return_from_line_watcher"] = return_from_line_watcher
                 if element: ###only if not empty
                     local_out_queue.put(element)
     

@@ -95,7 +95,7 @@ def main():
                 ### COMPARISON - REID with dict coming from  return_from_line_watcher ###
                 list_of_in_line  = []
                 list_of_skippers = []                    ###filthy skippers!!!
-                temp_person_list = element["return_from_reid"] ### list of people to check
+                temp_person_list = element["reid_result"] ### list of people to check
                 dict_from_line_watcher = element["return_from_line_watcher"]
                 if dict_from_line_watcher:
                     for temp_person in temp_person_list:
