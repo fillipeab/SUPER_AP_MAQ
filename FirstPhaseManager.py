@@ -23,8 +23,8 @@ class FirstPhaseManager:
     queues_from_sources : list = field(default_factory=list)
     output_queues       : list = field(default_factory=list)     
     ### element in output queue should have the following format {"frame" : frame, "model_analysis" : model_analysis, "reid_result" : list_of_temporary_person}
-    video_feed_manager  : VideoFeedManager = None
-    process_manager     : ProcessManager   = None
+    video_feed_manager  : VideoFeedManager = field(default_factory=VideoFeedManager)
+    process_manager     : ProcessManager   = field(default_factory=ProcessManager)
     
     def __call__(self):
         video_feed_manager=VideoFeedManager(self.sources)

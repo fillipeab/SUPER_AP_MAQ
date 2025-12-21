@@ -61,15 +61,16 @@ def main():
                 listed_counter+=1
                 
                 ###gets the results that we want to see
-                print((element))
                 model_analysis = element["model_analysis"]
-                second_phase_analysis = element["second_phase_analysis"]
+                return_from_watch_permanence = element["return_from_watch_permanence"]
+                return_from_watch_movement = element["return_from_watch_movement"]
                 result = model_analysis["result"] ### !!!!!!!!!!!!!!!!!!!!!!! This line is sensitive to the model type !!!!!!!!!!!!!!!!!!!!!!!!!!!
                 
-                for temp_person in second_phase_analysis:
-                    print(temp_person.id)
+                ### LOG so we can see who was classified as moving together
+                for temp_person in return_from_watch_permanence:
                     write_log(str(temp_person.id))
-                
+                for temp_person in return_from_watch_movement:
+                    write_log(str(temp_person.id),"log_2.txt")
                 
                 ###writes the frame, altered by YOLO, in a video
                 videowriter(result[0].plot())

@@ -27,7 +27,17 @@ class SecondPhaseManager(): ### Way more linear than phase 1
     SKIP_MOVEMENT           : int   = 0 ### REMEMBER, THIS IS RUN ONLY WHEN PERMANENCE IS NOT SKIPPED. WHICH MENAS THAT IT WILL SKIP SKIP_PERMANENCE*SKIP_MOVEMENT
     SKIP_LINE               : int   = 0
     ### ideally, there's no reason to skip the skipper_buster 
-    ### element in output queue should have the following format {"frame" : frame, "model_analysis" : model_analysis, "reid_result" : list_of_temporary_person}
+    """
+    element in input queue should have the following format {"frame" : frame, "model_analysis" : model_analysis, "reid_result" : list_of_temporary_person}
+    
+    element in output queue will have the format
+    {"frame" : frame,
+    "model_analysis" : model_analysis,
+    "reid_result" : list_of_temporary_person,    
+    "return_from_watch_permanence" : return_from_watch_permanence,
+    "return_from_watch_movement" : return_from_watch_movement,
+    "return_from_line" : return_from_line}
+    """
     queues_from_first_phase : list = field(default_factory=list) ###Receives from first phase
     second_process_managers : list = field(default_factory=list) ###Internal
     output_queues           : list = field(default_factory=list) ###External
@@ -50,8 +60,10 @@ class SecondPhaseManager(): ### Way more linear than phase 1
             if not local_queue.empty():
                 element = local_queue.get_nowait()
                 list_of_temporary_person = element["reid_result"]
-                second_phase_analysis = local_second_process_manager(list_of_temporary_person)
-                element["second_phase_analysis"]=second_phase_analysis
+                return_from_watch_permanence, return_from_watch_movement, return_from_line = local_second_process_manager(list_of_temporary_person)
+                element["return_from_watch_permanence"] = return_from_watch_permanence
+                element["return_from_watch_movement"] = return_from_watch_movement
+                element["return_from_line"] = return_from_line
                 if element: ###only if not empty
                     local_out_queue.put(element)
     
@@ -84,7 +96,9 @@ class SecondProcessManager(): ###Allow for best integration of all steps
     counter                 : int   = 0
 
     def __call__(self, list_of_temporary_person : list):
-        result_list = []
+        return_from_watch_permanence = []
+        return_from_watch_movement = []
+        return_from_line = []
         if self.counter % (self.SKIP_PERMANENCE+1) == 0:
             return_from_watch_permanence = self.watch_permanence(list_of_temporary_person)
             if self.counter % ((self.SKIP_PERMANENCE*self.SKIP_MOVEMENT)+1) == 0:
@@ -97,5 +111,4 @@ class SecondProcessManager(): ###Allow for best integration of all steps
                 
         self.counter+=1
         ### por hora ###
-        result_list=return_from_watch_permanence
-        return result_list
+        return return_from_watch_permanence, return_from_watch_movement, return_from_line

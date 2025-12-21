@@ -94,7 +94,7 @@ class REID_type: ###It's not used directly, but works as parent class to any fut
 class mobileCLIP(REID_type):
     model : ClassVar[Any] = None
     preprocess : ClassVar[Any] = None
-    SIMILARITY_THRESHOLD: ClassVar[Float] = 0.85
+    SIMILARITY_THRESHOLD: ClassVar[float] = 0.85
     
     def __post_init__(self):
         self.reid_type = "mobileCLIP"

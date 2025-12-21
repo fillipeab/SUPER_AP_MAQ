@@ -42,8 +42,8 @@ class ProcessManager:
     REID_SYSTEM = "mobileCLIP"
     
     ### WILL REID BE CENTRAL?
-    SKIP_REID    : Bool = True ### True or False
-    CENTRAL_REID : Bool = True
+    SKIP_REID    : bool = True ### True or False
+    CENTRAL_REID : bool = True
     
     ###SLEEP TIME
     SLEEP_TIME   : float = 0.000001

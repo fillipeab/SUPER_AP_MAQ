@@ -13,11 +13,11 @@ class WatchMovement:
     persons_dict                   : dict[int,  TempPerson] = field(default_factory=dict)
     changing_pos_dict              : dict[int, int] = field(default_factory=dict) ###dict with id -> value. When someone moves(IOU), this value starts increasing, till it gets to NEW_POS_THRESHOLD. Then, it updates their POS, and goes to -MOVING_THRESHOLD. It will increase till it gets to 0. When this happens, their movement is reset to 0.
     persons_mov_dict               : dict[int, tensor(4,)] = field(default_factory=dict) ###dict id -> movement
-    DISCART_THRESHOLD              : int   = -5
-    SAME_PLACE_IOU                 : int   = 0.1 ### IoU that defines someone that hasn't moved
-    CYCLES_TO_UPDATE_POS           : int   = 20
-    CYCLES_TO_FORGET_MOVE          : int   = 100 ###Number of frames before forgeting the old position and movement direction
-    LIMIT_SEEN_COUNTER             : int   = 10
+    DISCART_THRESHOLD              : int     = -5
+    SAME_PLACE_IOU                 : float   = 0.1 ### IoU that defines someone that hasn't moved
+    CYCLES_TO_UPDATE_POS           : int     = 20
+    CYCLES_TO_FORGET_MOVE          : int     = 100 ###Number of frames before forgeting the old position and movement direction
+    LIMIT_SEEN_COUNTER             : int     = 10
 
     def __call__(self, list_from_WP : list[TempPerson]): ###list_of_temporary_persons_from_WatchPermanence
         p_pc_dict = self.permanent_persons_counter_dict
@@ -65,7 +65,7 @@ class WatchMovement:
             p_pc_dict[key]-=1
             ### Maximum limit
             if p_pc_dict[key] > self.LIMIT_SEEN_COUNTER:
-                p_pc_dict[key] = LIMIT_SEEN_COUNTER
+                p_pc_dict[key] = self.LIMIT_SEEN_COUNTER
             ### Minimum limit
             if p_pc_dict[key] < -self.DISCART_THRESHOLD: ###Remove from memory person absent for too long - avoids memory overflow
                 remove_from_p_pc_dict.append(key)
@@ -90,7 +90,7 @@ class WatchMovement:
         ### PART 4 - finally, time to export people in sync movement ###
         moved_persons_dict = {}
         for key in p_mov_dict:
-            if p_mov_dict[key]!=torch.tensor([0,0,0,0]):
+            if not ( torch.all(p_mov_dict[key]==torch.tensor([0,0,0,0])) ):
                 moved_persons_dict[key]=p_mov_dict[key] ###Adds to the moved_person_dict
         
         ### Part 5 - Checks for the biggest cluster of tensors -> which will correspond to the direction of the line
@@ -119,8 +119,8 @@ def find_cluster(dict_tensors, eps=0.5, min_samples=2):
     if not dict_tensors:
         return [], 0
     
-    keys = list(dict_tensores.keys())
-    features = torch.stack(list(dict_tensores.values())).cpu().numpy()
+    keys = list(dict_tensors.keys())
+    features = torch.stack(list(dict_tensors.values())).cpu().numpy()
     
     clustering = DBSCAN(eps=eps, min_samples=min_samples).fit(features)
     labels = clustering.labels_
@@ -134,6 +134,6 @@ def find_cluster(dict_tensors, eps=0.5, min_samples=2):
     selected_label = unique_labels[np.argmax(contagens)]
     
     # Pega chaves do maior cluster
-    selected_cluster = [chaves[i] for i, lbl in enumerate(labels) if lbl == selected_label]
+    selected_cluster = [keys[i] for i, lbl in enumerate(labels) if lbl == selected_label]
     
     return selected_cluster, len(selected_cluster)
