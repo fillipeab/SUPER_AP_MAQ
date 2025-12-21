@@ -1,6 +1,5 @@
 ### Process 1, phase 2: find permanence
 from dataclasses import dataclass, field
-from typing import Any
 from TempPerson import TempPerson
 
 """
@@ -42,9 +41,13 @@ class PermanenceWatcher():
                 p_pc_dict[tp_id] += 2 ###important
                 
                 ### UPDATE PERMANENT PERSON DICT - used here to avoid 2 for checking, without need ###
-                if p_pc_dict[tp_id]-1 > self.PERMANENT_THRESHOLD: ### -1 to account for the +2 previously added
-                    
+                if tp_id in p_people_dict: ###already inside permanent people dict
+                    p_people_dict[tp_id] = temp_person ###UPDATES INFO in dict
+                    if p_pc_dict[tp_id] > self.EXPORT_THRESHOLD: ### Is this person seen count above exporting threshold? ###ONLY EXPORTS INFO OF PEOPLE THAT HAVE BEEN SEEN IN FRAME!
+                        return_list.append(p_people_dict[tp_id]) ###Yes: Adds to export list
+                elif p_pc_dict[tp_id]-1 > self.PERMANENT_THRESHOLD: ###-1 to account for the +2 previously added
                     p_people_dict[tp_id] = temp_person ###Updates the person
+                
                     
                     ### debug ### print("new_permanent_one")
                 ### end ###
@@ -76,8 +79,6 @@ class PermanenceWatcher():
         ### part 3 - create an export list of permanent person and remove "forgotten" people
         remove_from_p_person_dict = []
         for key in p_people_dict:
-            if p_pc_dict[key] > self.EXPORT_THRESHOLD: ###Person seen enough times
-                return_list.append(p_people_dict[key]) ###Adds to export list
             if p_pc_dict[key] < self.OUT_OF_PERMANENCE_THRESHOLD: ###Person absent for too long
                 remove_from_p_person_dict.append(key)
         for key in remove_from_p_person_dict:

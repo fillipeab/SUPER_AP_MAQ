@@ -18,7 +18,6 @@ from MovementWatcher import MovementWatcher
 from queue import Queue
 import threading
 import time
-from typing import Any, ClassVar
 
 @dataclass
 class SecondPhaseManager(): ### Way more linear than phase 1

@@ -1,17 +1,21 @@
-from FirstPhaseManager import FirstPhaseManager
-from SecondPhaseManager import SecondPhaseManager
 from dataclasses import dataclass, field
+from typing import List, Tuple
+import numpy as np
 import os
 import time
 import cv2
-
+from TempPerson import TempPerson
+from FirstPhaseManager import FirstPhaseManager
+from SecondPhaseManager import SecondPhaseManager
 
 ### começo
 def main():
     ###video parameters
     videowriter=VideoWriter(output_file='output.mp4')
-    video_sources=["auxiliares/People_in_line.mp4"]
-    
+    video_sources=["auxiliares/walking_around.mp4"]
+    bbdrawer = BBoxDrawer(2,0)
+
+
     ###running parameters
     queue_index         = 0  ###queue that will be watched
     SLEEP_TIME          = 0.000001
@@ -74,7 +78,9 @@ def main():
                     write_log(str(temp_person.id),"log_2.txt")
                 
                 ###writes the frame, altered by YOLO, in a video
-                videowriter(result[0].plot())
+                frame_from_yolo = result[0].plot()
+                frame_to_write = bbdrawer(frame_from_yolo,return_from_permanence_watcher)
+                videowriter(frame_to_write)
                 
                 ###prints how many outputs we already have
                 if listed_counter%50 == 0: ###printing takes a lot of time. Do it only for important values
@@ -150,6 +156,31 @@ class VideoWriter:
     def __del__(self):
         if hasattr(self, 'writer'):
             self.writer.release()
+
+
+@dataclass
+class BBoxDrawer:
+    thickness: int = 2
+    padding: int = 0  # Pixels para expandir
+    color: Tuple[int, int, int] = (0, 255, 0)
+    
+    def __call__(self, frame: np.ndarray, list_of_temp_people: List[TempPerson]) -> np.ndarray:
+        h, w = frame.shape[:2]
+        
+        for t_person in list_of_temp_people:
+            bbox = t_person.bb
+            x1, y1, x2, y2 = map(int, bbox)
+            
+            # Expande a bbox
+            x1 = max(0, x1 - self.padding)
+            y1 = max(0, y1 - self.padding)
+            x2 = min(w, x2 + self.padding)
+            y2 = min(h, y2 + self.padding)
+            
+            cv2.rectangle(frame, (x1, y1), (x2, y2), self.color, self.thickness)
+        
+        return frame
+
 
 def write_list_in_log(list):
     for e in list:
