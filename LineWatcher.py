@@ -30,7 +30,7 @@ from TempPerson import TempPerson
 class LineWatcher_neighbour(): ###Needs way more work, and maybe it's not the best
     ### receives the list of people
     PERCENT_CUT_TRIM_MEAN         : float = 0.1
-    NEIGHBOUR_MAX_RADIUS_DISTANCE : int   = 1   ###How distance, in smaller_axis value, can a neighbour be - This will be passed to find_nearest_neighbors
+    NEIGHBOUR_MAX_RADIUS_DISTANCE : float = 1   ###How distance, in smaller_axis value, can a neighbour be - This will be passed to find_nearest_neighbors
     ERASE_FROM_DICT_TIMEOUT       : int   = 180 ###Remember, that means the number of runs to erase an entry
     people_neighbour_id_dict      : dict  = field(default_factory=dict) ###List to remember people and their neighbours
     people_timeout_dict           : dict  = field(default_factory=dict) ###Timeout to erasure
@@ -54,13 +54,11 @@ class LineWatcher_neighbour(): ###Needs way more work, and maybe it's not the be
     ### 3 neighbours    - 25%
 
     ###static method
-    def calculate_neighbourhood(list_of_temporary_people, radius=50):
+    def calculate_neighbourhood(self, list_of_temporary_people, radius : float =50):
         # Array com: [x_center, y_center, person_id]
         centers_with_ids = np.array([
             [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2, person.id]
-            for person in list_of_temporary_people
-            for bbox in [person.bbox]
-        ])
+            for person in list_of_temporary_people for bbox in [person.bbox]])
         
         # Árvore só com coordenadas (ignora ID na distância)
         tree = cKDTree(centers_with_ids[:, :2])  # Apenas x,y
@@ -77,10 +75,9 @@ class LineWatcher_neighbour(): ###Needs way more work, and maybe it's not the be
             # Pega IDs dos vizinhos
             neighbors_ids = torch.tensor([int(centers_with_ids[idx][2]) for idx in indices])
             neighbors_by_id[person_id] = neighbors_ids
-        
         return neighbors_by_id
     
-    def calculate_smaller_axis_average(self,list_of_temporary_people, percent_cut = 0):
+    def calculate_smaller_axis_average(self,list_of_temporary_people, percent_cut : float = 0):
         if percent_cut == 0:
             percent_cut = self.PERCENT_CUT_TRIM_MEAN
         smaller_dimension_list = []
@@ -92,7 +89,8 @@ class LineWatcher_neighbour(): ###Needs way more work, and maybe it's not the be
                 smaller_dimension = y_variation
             ###add to list
             smaller_dimension_list.append(smaller_dimension)
-        trim_mean(smaller_dimension_list, percent_cut) ###Finds the mean, cutting extremes
+        average = trim_mean(smaller_dimension_list, percent_cut) ###Finds the mean, cutting extremes
+        return average
     
     def is_near_border(self, bbox, frame_shape, margin_percent=0.05):
         """
@@ -109,22 +107,53 @@ class LineWatcher_neighbour(): ###Needs way more work, and maybe it's not the be
         return (x1 <= margin or x2 >= w - margin or 
                 y1 <= margin or y2 >= h - margin)
 
-    def neighbourhood_disruption(self,person_id):
+    def neighbourhood_disruption(self,person_id : int) -> float:
         ### Lets balance like 50% to their number, 50% to their neighbours influence
-        if self.max_number_of_neighbours == self.min_number_of_neighbours:
+        if self.max_number_of_neighbours == self.min_number_of_neighbours: ###there's no way to tell who is the disruptor without making asumptions
             return 0
-        ### person proper disruption
-        neighbour_number = len(self.people_neighbour_id_dict[person_id])
-        neighbour_self_disruption = (self.max_number_of_neighbours-neighbour_number)/(self.max_number_of_neighbours-self.min_number_of_neighbours)
+        neighbour_self_disruption : float = 0
+        neighbourhood_disruption  : float = 0
+        neighbour_self_disruption_weight     : float = 1
+        neighbourhood_disruption_weight      : float = 1
 
-        ### Comparisson with other people
+        ### person proper disruption ###
+        neighbour_number = len(self.people_neighbour_id_dict[person_id])
+        neighbour_self_disruption = (self.max_number_of_neighbours-neighbour_number)/(self.max_number_of_neighbours-self.min_number_of_neighbours) ### 0 means its the max. The farther from zero, the less change to be a disruptor
+        ### person proper disruption - end ###
+
+        ### neighbourhood disruption
+        associated_neighbours : float = 0
+        an_counter            : int   = 0
+        all_neighbours        : float = 0
+        all_counter           : int   = 0
+        ### everyone ###
+        for person_id in self.people_neighbour_id_dict: ###for the people in his id
+            all_neighbours += len(self.people_neighbour_id_dict[person_id])
+            all_counter+=1
+        all_neighbours = all_neighbours/all_counter ###gets average
+        ### everyone - END ###
+        
+        ### associated ###
+        ### gets for the people that are associated with the chosen person
+        personal_dict = self.people_neighbour_id_dict[person_id]
+        for neighbour_id in personal_dict:
+            associated_neighbours+=len(self.people_neighbour_id_dict[int(neighbour_id)])
+            an_counter+=1
+        associated_neighbours = associated_neighbours/an_counter ###gets average
+        neighbourhood_disruption = (associated_neighbours - all_neighbours)/all_neighbours ### the bigger this is, the more he got to know people with a lot of contacts. Which means he's skipping
+        ### associated - end ###
+        
+        ### neighbourhood - end ###
+
+        total_disruption = (neighbour_self_disruption*neighbour_self_disruption_weight+neighbourhood_disruption*neighbourhood_disruption_weight)/(neighbour_self_disruption_weight*neighbourhood_disruption_weight)
+        return total_disruption
 
 
     def __call__(self,list_of_temporary_people : list[TempPerson], frame_shape : Tuple[int,...] = (720, 1280, 3)): ###LineWatcher is called
         return_dict : dict[int, Literal["skipper", "in line", "wait"]]  = {}
         ### 0 - calculate neighbourhood ###
-        average_min_distance = self.calculate_smaller_axis_average(list_of_temporary_people,0.2)
-        new_neighbourhood_dict = self.calculate_neighbourhood(list_of_temporary_people, average_min_distance*self.NEIGHBOUR_MAX_RADIUS_DISTANCE)
+        average_min_distance = self.calculate_smaller_axis_average(list_of_temporary_people , 0.2)
+        new_neighbourhood_dict = self.calculate_neighbourhood(list_of_temporary_people, float(average_min_distance * self.NEIGHBOUR_MAX_RADIUS_DISTANCE))
         ### 1 - check list - get new people ###
         new_people = []
         for temp_person in list_of_temporary_people:
@@ -134,8 +163,8 @@ class LineWatcher_neighbour(): ###Needs way more work, and maybe it's not the be
             else: ###old people in dict
                 ###compare to find internal line skipers - only the bold ones
                 old_neighbour = self.people_neighbour_id_dict[t_id]
-                bbox_iou(old_neighbour[t_id],new_neighbourhood_dict[t_id])
-                if bbox_iou < self.BOLD_INTERNAL_SKIPPER:
+                IoU_neighbourhood = bbox_iou(old_neighbour[t_id],new_neighbourhood_dict[t_id])
+                if IoU_neighbourhood < self.BOLD_INTERNAL_SKIPPER:
                     ###FOUND A BOLD ONE
                     return_dict[t_id] = "skipper"
                 else:
@@ -157,16 +186,44 @@ class LineWatcher_neighbour(): ###Needs way more work, and maybe it's not the be
             ###check if the number of people in line changed
             if number_people_in_line > self.previous_number_of_people_in_line:
                 base_skipping_probability+=self.PS_MORE_PEOPLE_IN_LINE
-            for temp_person in list_of_temporary_people:
+            skipping_probability = 0
+
+
+            ### checking new people
+            for temp_person in new_people:
                 skipping_probability += base_skipping_probability
+                ### cheks for near the border
                 if not self.is_near_border(temp_person.bb,frame_shape): ###se nao for, + chance de ser um fura fila
                     skipping_probability += self.PS_NOT_NEAR_BORDER
-                ### Calculating neighbourhood disruption - but how? well, we just need to check the number of entries of this person\
-                ### max_entries ---- person_entries ---- minimum entries.
-                ### It's reasonable that a new person would be close to the minimum. The farthest from it, the more probable to be skiping.
-                ### Also, the same goes for their new neighbours. If their neighbours are close to the top, basically.
+                ### end of near the border
+                ### NEIGHBOUR DISRUPTION   ###
+                skipping_probability += self.neighbourhood_disruption(temp_person.id) * self.PS_NEIGHBOUR_DISRUPTION
+                ### NEIGHBOUR DISRUPTION - END ###
 
-
-
+                ### FINALLY, CHECKS FOR SKIPPERS ###
+                if skipping_probability>self.PS_CONFIRMED_SKIPPER:
+                    return_dict[temp_person]="skipper"
+                else:
+                    return_dict[temp_person]="in line" ### WITH THIS, EVERYONE IS EITHER CLASSIFIED AS "IN LINE" OR "SKIPPER". They can still be spotted skipping. The process of return someone to in_line was not implemented. The reason is simple. It would require some degree of guessing, and could make the model go in conflict with itself. Future implementations, using machine learning, could get it without much trouble, especially in a classification problem such as this.
         ###Finally, updates variables
         self.previous_number_of_people_in_line=number_people_in_line
+
+        return return_dict
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### Calculating neighbourhood disruption - but how? well, we just need to check the number of entries of this person\
+### max_entries ---- person_entries ---- minimum entries.
+### It's reasonable that a new person would be close to the minimum. The farthest from it, the more probable to be skiping.
+### Also, the same goes for their new neighbours. If their neighbours are close to the top, basically.
