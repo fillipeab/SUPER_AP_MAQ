@@ -13,7 +13,8 @@ def main():
     ###video parameters
     videowriter=VideoWriter(output_file='output.mp4')
     video_sources=["auxiliares/walking_around.mp4"]
-    bbdrawer = BBoxDrawer(2,0)
+    bbdrawer_line = BBoxDrawer(2,0)
+    bbdrawer_skipper = BBoxDrawer(2,0,(255,0,0))
 
 
     ###running parameters
@@ -65,11 +66,11 @@ def main():
                 """
                 element in output queue will have the format - after 1 and second phase
                 {"frame" : frame,
-                "model_analysis" : model_analysis,
-                "reid_result" : list_of_temporary_person,    
-                "return_from_permanence_watcher" : return_from_permanence_watcher,
-                "return_from_movement_watcher" : return_from_movement_watcher,
-                "return_from_line_watcher" : return_from_line_watcher}
+                "model_analysis" : model_analysis,                                 : analysis from model/varies
+                "reid_result" : list_of_temporary_person,                          : list[TempPerson]   
+                "return_from_permanence_watcher" : return_from_permanence_watcher, : list[TempPerson]
+                "return_from_movement_watcher" : return_from_movement_watcher,     : list[TempPerson]
+                "return_from_line_watcher" : return_from_line_watcher}             : dict[id,status]
                 """
                 listed_counter+=1
                 
@@ -88,17 +89,33 @@ def main():
                 
                 
                 ### VIDEO WRITER ###
-                ###writes the frame, altered by YOLO, in a video
-                frame_from_yolo = result[0].plot()
+
+                frame_to_write = result[0].plot() ###writes the frame, altered by YOLO, in a video
                 
-                ###Compare REID with dict coming from  return_from_line_watcher
+                ### COMPARISON - REID with dict coming from  return_from_line_watcher ###
                 list_of_in_line  = []
                 list_of_skippers = []                    ###filthy skippers!!!
-                for temp_person in element["return_from_reid"]
-                ### Finally writes in frame
-                
-                frame_to_write = bbdrawer1(frame_from_yolo,return_from_permanence_watcher)
-                
+                temp_person_list = element["return_from_reid"] ### list of people to check
+                dict_from_line_watcher = element["return_from_line_watcher"]
+                if dict_from_line_watcher:
+                    for temp_person in temp_person_list:
+                            if temp_person.id in dict_from_line_watcher: ###line watcher findings
+                                status=dict_from_line_watcher[temp_person.id]
+                                if status == "in_line":
+                                    list_of_in_line.append(temp_person)
+                                elif status == "skipper":
+                                    list_of_skippers.append(temp_person)
+                                else:
+                                    pass
+                ### COMPARISON - END ###
+
+                ### Writing in frame ###
+                if list_of_in_line:
+                    frame_to_write = bbdrawer_line(frame_to_write,list_of_in_line) ###Marks in line
+                if list_of_skippers:
+                    frame_to_write = bbdrawer_skipper(frame_to_write,list_of_skippers) ###Marks skippers
+                ### Writing in frame - END ###
+
                 videowriter(frame_to_write)
                 
                 ### VIDEO WRITER - END ###

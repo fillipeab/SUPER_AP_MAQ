@@ -8,6 +8,7 @@ import torch
 
 @dataclass
 class MovementWatcher:
+    ### MovementWatcher[list[TempPerson]] -> list[TempPerson]
     permanent_people_counter_dict : dict[int, int] = field(default_factory=dict) ###dict with id -> times seen
     people_dict                   : dict[int,  TempPerson] = field(default_factory=dict)
     changing_pos_dict              : dict[int, int] = field(default_factory=dict) ###dict with id -> value. When someone moves(IOU), this value starts increasing, till it gets to NEW_POS_THRESHOLD. Then, it updates their POS, and goes to -MOVING_THRESHOLD. It will increase till it gets to 0. When this happens, their movement is reset to 0.

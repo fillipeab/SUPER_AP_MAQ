@@ -10,6 +10,7 @@ Output: List of permanent people
 
 @dataclass
 class PermanenceWatcher():
+    ### PermanenceWatcher[list[TempPerson]] -> list[TempPerson]
     permanent_people_counter_dict : dict[int,int] = field(default_factory=dict) ###dict with key -> times seen
     permanent_people_dict : dict[int,TempPerson] = field(default_factory=dict)
     LIMIT_SEEN_COUNTER = 100
