@@ -17,4 +17,5 @@ class VideoFeed:
                 break
             # Adicionar resultado na fila
             self.video_queue.put(frame)
+            ###print("frames_in_queue:",self.video_queue.qsize(),"\n")
         cap.release()

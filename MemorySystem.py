@@ -19,7 +19,6 @@ class MemorySystem:
         
     def __call__(self):
         person_db_standard = PersonDB()
-        self.add_person_DBs(persondb_standard)
     
         
     

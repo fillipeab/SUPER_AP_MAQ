@@ -5,43 +5,41 @@ from typing import Any
 from dataclasses import dataclass, field
 from VideoFeed import VideoFeed
 
-### Video sources
-dummy_video_sources = [0] #(Source)
-
-def create_queues(number_of_queues : int = 1):
-    queues_from_sources = []
-    for i in range(number_of_queues): ###One queue for each source
-        queues_from_sources.append(Queue())
-    return queues_from_sources
 
 @dataclass
 class VideoFeedManager:
-    video_sources : list = field(default_factory = lambda: dummy_video_sources.copy())
+    video_sources       : list = field(default_factory=list)
     queues_from_sources : list = field(default_factory=list)
 
-
-    def __post_init__(self):
-        self.queues_from_sources = create_queues(self.number_of_queues)
-    
     @property
     def number_of_queues(self):
         return len(self.video_sources)
     
+    @staticmethod
+    def create_queues(number_of_queues : int = 1):
+        queues_from_sources = []
+        for i in range(number_of_queues): ###One queue for each source
+            queues_from_sources.append(Queue())
+        return queues_from_sources
+    
+    def __post_init__(self):
+        self.queues_from_sources = self.create_queues(self.number_of_queues)
+    
     def start(self):
         # Iniciar threads
         for i in range(self.number_of_queues): ###for each camera in the list
+            video_feed = VideoFeed(self.video_sources[i], self.queues_from_sources[i])
             thread = threading.Thread(
-                target=VideoFeed,
-                args=(self.video_sources[i], self.queues_from_sources[i]) ###args are the source, and the queue
+                target=video_feed ###args are the source, and the queue
             )
             thread.daemon = True ###Doesn't stop the program from ending
             thread.start() ###Create the thread
     
     def __call__(self):
         self.start()
-        return number_of_queues, queues_from_sources
+        return self.number_of_queues, self.queues_from_sources
 
-###just testing
+###just testing the atributting of sources
 
 if __name__ == "__main__":
     print("Testing fuctioning")

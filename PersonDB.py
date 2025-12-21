@@ -4,18 +4,18 @@ from Person import Person
 
 @dataclass
 class PersonDB:
-    stored_persons : dict = field(default_factory=dict)
+    stored_people : dict = field(default_factory=dict)
     
-    def add(self, item : Person):
-        self.stored_persons[Person.id] = Person
-    
-    def remove(self, pos : int = -1):
-        self.stored_persons[pos].pop(pos)
+    def add(self, new_person : Person):
+        self.stored_people[new_person.id] = new_person
     
     @property
     def size(self):
-        return len(self.stored_persons)
+        return len(self.stored_people)
     
     def get_person_by_id(self, id : int = 0):
-        return self.stored_persons[id]
+        if id in self.stored_people: ###Makes sure the id is present
+            return self.stored_people[id]
+        else:
+            return None
             
