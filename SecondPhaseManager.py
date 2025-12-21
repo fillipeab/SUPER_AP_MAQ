@@ -14,6 +14,7 @@ LineFinder/Skipper_buster(list_of_temporary_person_watch_movement) => list_of_pe
 from dataclasses import dataclass, field
 from typing import Any
 from WatchPermanence import WatchPermanence
+from WatchMovement import WatchMovement
 from queue import Queue
 import threading
 import time
@@ -23,7 +24,7 @@ from typing import Any, ClassVar
 class SecondPhaseManager(): ### Way more linear than phase 1
     SLEEP_TIME              : float = 0.000001
     SKIP_PERMANENCE         : int   = 0
-    SKIP_MOVEMENT           : int   = 0
+    SKIP_MOVEMENT           : int   = 0 ### REMEMBER, THIS IS RUN ONLY WHEN PERMANENCE IS NOT SKIPPED. WHICH MENAS THAT IT WILL SKIP SKIP_PERMANENCE*SKIP_MOVEMENT
     SKIP_LINE               : int   = 0
     ### ideally, there's no reason to skip the skipper_buster 
     ### element in output queue should have the following format {"frame" : frame, "model_analysis" : model_analysis, "reid_result" : list_of_temporary_person}
@@ -76,6 +77,7 @@ class SecondProcessManager(): ###Allow for best integration of all steps
     ### expected flux of information
     ### watch_permanence -> watch_movement -> watch_line -> skipper_buster
     watch_permanence        : WatchPermanence = field(default_factory=WatchPermanence)
+    watch_movement          : WatchMovement   = field(default_factory=WatchMovement)
     SKIP_PERMANENCE         : int   = 0
     SKIP_MOVEMENT           : int   = 0
     SKIP_LINE               : int   = 0
@@ -85,9 +87,10 @@ class SecondProcessManager(): ###Allow for best integration of all steps
         result_list = []
         if self.counter % (self.SKIP_PERMANENCE+1) == 0:
             return_from_watch_permanence = self.watch_permanence(list_of_temporary_person)
-            """
-            if self.counter % (self.SKIP_PERMANENCE*self.SKIP_MOVEMENT+1) == 0:
+            if self.counter % ((self.SKIP_PERMANENCE*self.SKIP_MOVEMENT)+1) == 0:
                 return_from_watch_movement = self.watch_movement(return_from_watch_permanence)
+                self.counter=0
+                """
                 if self.counter % (self.SKIP_PERMANENCE*self.SKIP_MOVEMENT*self.SKIP_LINE+1) == 0:
                     return_from_line = self.watch_line(return_from_watch_movement)
             """        
@@ -96,6 +99,3 @@ class SecondProcessManager(): ###Allow for best integration of all steps
         ### por hora ###
         result_list=return_from_watch_permanence
         return result_list
-        
-            
-            

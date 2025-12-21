@@ -17,16 +17,33 @@ def main():
     SLEEP_TIME          = 0.000001
     ID_SKIP_FRAME       = 0
     REID_SKIP_FRAME     = 4
+    SKIP_PERMANENCE     = 0
+    SKIP_MOVEMENT       = 0
+    SKIP_LINE           = 0
     
     ###Program variables
-    ###phase 1
-    first_phase=FirstPhaseManager(sources = video_sources, SLEEP_TIME = SLEEP_TIME, ID_SKIP_FRAME=ID_SKIP_FRAME, REID_SKIP_FRAME=REID_SKIP_FRAME)
+    ### phase 1 ###
+    first_phase=FirstPhaseManager(
+    sources = video_sources,
+    SLEEP_TIME = SLEEP_TIME,
+    ID_SKIP_FRAME=ID_SKIP_FRAME,
+    REID_SKIP_FRAME=REID_SKIP_FRAME
+    )
     number_output_queues, queues_from_sources, id_processed_queues, reid_processed_queues, first_phase_output_queues = first_phase() ###starts phase 1
     print("phase 1 - running")
-    ###phase 2
-    second_phase=SecondPhaseManager(SLEEP_TIME=SLEEP_TIME, queues_from_first_phase = first_phase_output_queues)
+    ### phase 1 - ok ###
+    
+    ### phase 2 ###
+    second_phase = SecondPhaseManager(
+    SLEEP_TIME=SLEEP_TIME,
+    SKIP_PERMANENCE=SKIP_PERMANENCE,
+    SKIP_MOVEMENT=SKIP_MOVEMENT,
+    SKIP_LINE=SKIP_LINE,
+    queues_from_first_phase = first_phase_output_queues
+    )
     output_queues = second_phase()
     print("phase 2 - running")
+    ### phase 2 - ok ###
     
     ### Main loop
     doom_counter = 0
@@ -39,17 +56,32 @@ def main():
         while True:
             time.sleep(SLEEP_TIME*waiting_multiplier)
             if not output_queues[queue_index].empty():
+                ### get output from queue
                 element = output_queues[queue_index].get_nowait()
                 listed_counter+=1
-                ###get processed image
+                
+                ###gets the results that we want to see
+                print((element))
                 model_analysis = element["model_analysis"]
-                """result = model_analysis["result"] ### !!!!!!!!!!!!!!!!!!!!!!! This line is sensitive to the model type !!!!!!!!!!!!!!!!!!!!!!!!!!!
-                videowriter(result[0].plot())"""
+                second_phase_analysis = element["second_phase_analysis"]
+                result = model_analysis["result"] ### !!!!!!!!!!!!!!!!!!!!!!! This line is sensitive to the model type !!!!!!!!!!!!!!!!!!!!!!!!!!!
+                
+                for temp_person in second_phase_analysis:
+                    print(temp_person.id)
+                    write_log(str(temp_person.id))
+                
+                
+                ###writes the frame, altered by YOLO, in a video
+                videowriter(result[0].plot())
+                
+                ###prints how many outputs we already have
                 if listed_counter%50 == 0: ###printing takes a lot of time. Do it only for important values
                     print ("listed_counter: ",listed_counter) ### see if the process is getting to the end
-               
-            ### breaking mechanism ###
-            if doom_counter%5 == 0: ###printing takes a lot of time. Do it only for important values
+            
+
+            
+            ### breaking mechanism - stops the program once all queues are empty. Keep in mind that second_phase barely uses queues ###
+            if doom_counter%50 == 0: ###printing takes a lot of time. Do it only for important values
                     print (doom_counter) ### see if the process is getting to the end
             if doom_counter == 1000:
                 try: ###checking for empty queues
@@ -77,8 +109,7 @@ def main():
             
             if doom_flag>=3 :
                 break
-            
-            ### breaking mechanism - end ###
+            ### breaking mechanism - END ###
             
     except Exception as e:
         print("ERRO IN MAIN LOOP:" , e)
@@ -88,8 +119,12 @@ def main():
         cv2.destroyAllWindows()
         os._exit(1)
     
-    ###END OF MAIN###
+###END OF MAIN###
 
+
+###SUPPORT FUNCTIONS###
+
+###class to write videos
 @dataclass
 class VideoWriter:
     output_file: str = 'output.mp4'
@@ -113,9 +148,22 @@ class VideoWriter:
         if hasattr(self, 'writer'):
             self.writer.release()
 
+def write_list_in_log(list):
+    for e in list:
+        write_log(str(e))
+    write_log("\n")
+
+
+def write_log(text, file="log.txt"):
+    with open(file, 'a') as f:
+        f.write(f"{text}\n")
+###END OF SUPPORT FUNCTIONS###
 
 
 
+
+
+### To run the script ###
 if __name__ == "__main__":
     try:
         main()
