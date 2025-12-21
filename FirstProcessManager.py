@@ -14,7 +14,7 @@ from VideoFeedManager import VideoFeedManager
 
 
 @dataclass
-class ProcessManager:
+class FirstProcessManager:
     """
     queues_from_sources =>  process_source_to_id(ID_processor(s) (one for each)) => ID_processed_queues
     ID_processed_queues => process_ID_to_REID_central(1 TO all) => Output_queues ###Were previoulsy called REID_queues.

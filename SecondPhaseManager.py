@@ -1,23 +1,10 @@
-"""
-Manager of Phase 2:
-entry: output_from_phase_1 = number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, self.output_queues
-element in output_queue = {"frame" : frame, "model_analysis" : model_analysis, "reid_result" : list_of_temporary_person}
-
-PermanenceWatcher(element[list_of_temporary_person]) => list_of_temporary_person_permanence_watcher(that stayed in frame for the given amount : defined in PermanenceWatcher.py)
-   ||||||
-MovementWatcher(list_of_temporary_person_permanence_watcher) => list_of_temporary_person_movement_watcher(largest group moving in same direction)
-   ||||||
-LineFinder/Skipper_buster(list_of_temporary_person_movement_watcher) => list_of_people_in_line + list_of_skippers
-
-
-"""
 from dataclasses import dataclass, field
 from typing import Any
-from PermanenceWatcher import PermanenceWatcher
-from MovementWatcher import MovementWatcher
 from queue import Queue
 import threading
 import time
+
+from SecondProcessManager import SecondProcessManager
 
 @dataclass
 class SecondPhaseManager(): ### Way more linear than phase 1
@@ -83,31 +70,16 @@ class SecondPhaseManager(): ### Way more linear than phase 1
         return self.output_queues
         
 
-@dataclass
-class SecondProcessManager(): ###Allow for best integration of all steps
-    ### expected flux of information
-    ### permanence_watcher -> movement_watcher -> watch_line -> skipper_buster
-    permanence_watcher      : PermanenceWatcher = field(default_factory=PermanenceWatcher)
-    movement_watcher        : MovementWatcher   = field(default_factory=MovementWatcher)
-    SKIP_PERMANENCE         : int   = 0
-    SKIP_MOVEMENT           : int   = 0
-    SKIP_LINE               : int   = 0
-    counter                 : int   = 0
+"""
+Manager of Phase 2:
+entry: output_from_phase_1 = number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, self.output_queues
+element in output_queue = {"frame" : frame, "model_analysis" : model_analysis, "reid_result" : list_of_temporary_person}
 
-    def __call__(self, list_of_temporary_person : list):
-        return_from_permanence_watcher = []
-        return_from_movement_watcher = []
-        return_from_line = []
-        if self.counter % (self.SKIP_PERMANENCE+1) == 0:
-            return_from_permanence_watcher = self.permanence_watcher(list_of_temporary_person)
-            if self.counter % ((self.SKIP_PERMANENCE*self.SKIP_MOVEMENT)+1) == 0:
-                return_from_movement_watcher = self.movement_watcher(return_from_permanence_watcher)
-                self.counter=0
-                """
-                if self.counter % (self.SKIP_PERMANENCE*self.SKIP_MOVEMENT*self.SKIP_LINE+1) == 0:
-                    return_from_line = self.watch_line(return_from_movement_watcher)
-            """        
-                
-        self.counter+=1
-        ### por hora ###
-        return return_from_permanence_watcher, return_from_movement_watcher, return_from_line
+PermanenceWatcher(element[list_of_temporary_person]) => list_of_temporary_person_permanence_watcher(that stayed in frame for the given amount : defined in PermanenceWatcher.py)
+   ||||||
+MovementWatcher(list_of_temporary_person_permanence_watcher) => list_of_temporary_person_movement_watcher(largest group moving in same direction)
+   ||||||
+LineFinder/Skipper_buster(list_of_temporary_person_movement_watcher) => list_of_people_in_line + list_of_skippers
+
+
+"""

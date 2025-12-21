@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from PersonDB import PersonDB
 from MemorySystem import MemorySystem
 from VideoFeedManager import VideoFeedManager
-from ProcessManager import ProcessManager
+from FirstProcessManager import FirstProcessManager
 import os
 import time
 import cv2
@@ -20,15 +20,15 @@ class FirstPhaseManager:
     queues_from_sources : list = field(default_factory=list)
     output_queues       : list = field(default_factory=list)     
     ### element in output queue should have the following format {"frame" : frame, "model_analysis" : model_analysis, "reid_result" : list_of_temporary_person}
-    video_feed_manager  : VideoFeedManager = field(default_factory=VideoFeedManager)
-    process_manager     : ProcessManager   = field(default_factory=ProcessManager)
+    video_feed_manager    : VideoFeedManager    = field(default_factory=VideoFeedManager)
+    first_process_manager : FirstProcessManager = field(default_factory=FirstProcessManager)
     
     def __call__(self):
         video_feed_manager=VideoFeedManager(self.sources)
         _, self.queues_from_sources = video_feed_manager() ###Starts video_feed_manager
-        process_manager = ProcessManager(queues_from_sources = self.queues_from_sources, ID_SKIP_FRAME = self.ID_SKIP_FRAME, REID_SKIP_FRAME = self.REID_SKIP_FRAME, SLEEP_TIME=self.SLEEP_TIME)
-        number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, self.output_queues = process_manager() 
-        ###number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, output_queues ###Start process_manager 
+        first_process_manager = FirstProcessManager(queues_from_sources = self.queues_from_sources, ID_SKIP_FRAME = self.ID_SKIP_FRAME, REID_SKIP_FRAME = self.REID_SKIP_FRAME, SLEEP_TIME=self.SLEEP_TIME)
+        number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, self.output_queues = first_process_manager() 
+        ###number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, output_queues ###Start first_process_manager 
         ### element in output queue should have the following format {"frame" : frame, "model_analysis" : model_analysis, "reid_result" : list_of_temporary_person}
         return number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, self.output_queues
         
