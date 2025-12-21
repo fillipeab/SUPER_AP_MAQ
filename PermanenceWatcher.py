@@ -10,9 +10,9 @@ Output: List of permanent people
 """
 
 @dataclass
-class WatchPermanence():
-    permanent_persons_counter_dict : dict[int,int] = field(default_factory=dict) ###dict with key -> times seen
-    permanent_persons_dict : dict[int,TempPerson] = field(default_factory=dict)
+class PermanenceWatcher():
+    permanent_people_counter_dict : dict[int,int] = field(default_factory=dict) ###dict with key -> times seen
+    permanent_people_dict : dict[int,TempPerson] = field(default_factory=dict)
     LIMIT_SEEN_COUNTER = 100
     EXPORT_THRESHOLD = 5
     PERMANENT_THRESHOLD = 5
@@ -24,13 +24,13 @@ class WatchPermanence():
             self.OUT_OF_PERMANENCE_THRESHOLD=self.DISCART_THRESHOLD
     
     
-    def __call__(self,list_of_temporary_persons : list[TempPerson]) -> list[TempPerson]: ###KEEEP IN MIND, THIS LIST HAS ALREADY BEEN PROCESSED BY PHASE 1
-        p_pc_dict = self.permanent_persons_counter_dict
-        p_persons_dict = self.permanent_persons_dict
+    def __call__(self,list_of_temporary_people : list[TempPerson]) -> list[TempPerson]: ###KEEEP IN MIND, THIS LIST HAS ALREADY BEEN PROCESSED BY PHASE 1
+        p_pc_dict = self.permanent_people_counter_dict
+        p_people_dict = self.permanent_people_dict
         return_list = []
         
         ### part 1 - update the entry ###
-        for temp_person in list_of_temporary_persons:
+        for temp_person in list_of_temporary_people:
             tp_id = int(temp_person.id)
             if tp_id in p_pc_dict: ###checks if id is registred in dict
                 
@@ -44,7 +44,7 @@ class WatchPermanence():
                 ### UPDATE PERMANENT PERSON DICT - used here to avoid 2 for checking, without need ###
                 if p_pc_dict[tp_id]-1 > self.PERMANENT_THRESHOLD: ### -1 to account for the +2 previously added
                     
-                    p_persons_dict[tp_id] = temp_person ###Updates the person
+                    p_people_dict[tp_id] = temp_person ###Updates the person
                     
                     ### debug ### print("new_permanent_one")
                 ### end ###
@@ -75,12 +75,12 @@ class WatchPermanence():
         
         ### part 3 - create an export list of permanent person and remove "forgotten" people
         remove_from_p_person_dict = []
-        for key in p_persons_dict:
+        for key in p_people_dict:
             if p_pc_dict[key] > self.EXPORT_THRESHOLD: ###Person seen enough times
-                return_list.append(p_persons_dict[key]) ###Adds to export list
+                return_list.append(p_people_dict[key]) ###Adds to export list
             if p_pc_dict[key] < self.OUT_OF_PERMANENCE_THRESHOLD: ###Person absent for too long
                 remove_from_p_person_dict.append(key)
         for key in remove_from_p_person_dict:
-            p_persons_dict.pop(key,None)
+            p_people_dict.pop(key,None)
         ### part 3 - end ###
         return return_list

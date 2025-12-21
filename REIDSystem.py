@@ -123,7 +123,7 @@ class mobileCLIP(REID_type):
         
     
     def __call__(self,frame,list_of_temporary_person):
-        ###Get features from all temporary persons in list
+        ###Get features from all temporary people in list
         ###Keep in mind this list will NOT be preserved. Its very nature is being temporary
         for temp_person in list_of_temporary_person:
             temp_id = temp_person.id
@@ -221,18 +221,18 @@ if __name__ == "__main__":
         ret, frame = cap.read()
         if Testing_mode == True:
              model_analysis = id_system.testing(frame)
-             result, temporary_persons = model_analysis["result"], model_analysis["temporary_persons"]
-             reid_system_result = reid_system(frame,temporary_persons)
+             result, temporary_people = model_analysis["result"], model_analysis["temporary_people"]
+             reid_system_result = reid_system(frame,temporary_people)
         else:
             model_analysis = id_system(frame)
-            result, temporary_persons = model_analysis["result"], model_analysis["temporary_persons"]
-            reid_system_result = reid_system(frame,temporary_persons)
+            result, temporary_people = model_analysis["result"], model_analysis["temporary_people"]
+            reid_system_result = reid_system(frame,temporary_people)
         
         if print_box_output==True:
-            if temporary_persons:
+            if temporary_people:
                 print("\n","||==========<>==========<>==========<>==========<>==========||","\n",
                       "first temp_person","\n",
-                      temporary_persons[0],"\n",
+                      temporary_people[0],"\n",
                       "||==========<>==========<>==========<>==========<>==========||","\n")  ### a way to find exactly what is the output from the YOLO tracker
             print("boxes:","\n",
             "||----------|----------|----------|----------|----------|----------||","\n",

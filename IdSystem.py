@@ -13,8 +13,8 @@ from TempPerson import TempPerson
 Expected behavior
 Entry : Source = number or string
 Call : IDSystem(source) 
-Output : model_analysis[dict] = {"result" : model_result, "temporary_persons" : temporary_persons}
-    temporary_persons : list of temporary_person
+Output : model_analysis[dict] = {"result" : model_result, "temporary_people" : temporary_people}
+    temporary_people : list of temporary_person
     model_result : varies with model type
 """
 
@@ -73,7 +73,7 @@ class YoloID8n():
         device='cpu',      # 'cpu' or 'cuda' (GPU)
         verbose=False      # Show logs
         )
-        temporary_persons = []
+        temporary_people = []
         for frame in model_result: ### By definition, there should be ONLY one frame. However, in the possibility of having more than one, this implementation was done. It's important to note that it will leave ALL detections in the same list. That is, there will be no frame differentiation.
             element=frame.boxes
             try:
@@ -82,10 +82,10 @@ class YoloID8n():
                     t_person.id = element.id[i]
                     t_person.bb = element.xyxy[i] ###Uses the xyxy return from YOLO
                     t_person.confidence = element.conf[i]
-                    temporary_persons.append(t_person)
+                    temporary_people.append(t_person)
             except:
                 pass
-        model_analysis = {"result" : model_result, "temporary_persons" : temporary_persons}      
+        model_analysis = {"result" : model_result, "temporary_people" : temporary_people}      
         return model_analysis
     
     def testing(self, source):
@@ -102,9 +102,9 @@ class YoloID8n():
         verbose=True        # Show logs
         )
         temporary_person = TempPerson()
-        temporary_persons = [temporary_person]
+        temporary_people = [temporary_person]
         
-        model_analysis = {"result" : model_result, "temporary_persons" : temporary_persons}      
+        model_analysis = {"result" : model_result, "temporary_people" : temporary_people}      
         return model_analysis
 
 
@@ -139,16 +139,16 @@ if __name__ == "__main__":
         ret, frame = cap.read()
         if Testing_mode == True:
              model_analysis = id_system.testing(frame)
-             model_result, temporary_persons = model_analysis["result"], model_analysis["temporary_persons"]
+             model_result, temporary_people = model_analysis["result"], model_analysis["temporary_people"]
         else:
             model_analysis = id_system(frame)
-            model_result, temporary_persons = model_analysis["result"], model_analysis["temporary_persons"]
+            model_result, temporary_people = model_analysis["result"], model_analysis["temporary_people"]
         
         if print_box_output==True:
-            if temporary_persons:
+            if temporary_people:
                 print("\n","||==========<>==========<>==========<>==========<>==========||","\n",
                       "first temp_person","\n",
-                      temporary_persons[0],"\n",
+                      temporary_people[0],"\n",
                       "||==========<>==========<>==========<>==========<>==========||","\n")  ### a way to find exactly what is the output from the YOLO tracker
             print("boxes:","\n",
             "||----------|----------|----------|----------|----------|----------||","\n",

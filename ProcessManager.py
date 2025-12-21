@@ -99,7 +99,7 @@ class ProcessManager:
                     element = local_id_queue.get_nowait()
                     if self.REID_COUNTER % (self.REID_SKIP_FRAME+1) == 0:
                         frame, model_analysis = element["frame"], element["model_analysis"]
-                        list_of_temporary_person = reid_system(frame,model_analysis["temporary_persons"])
+                        list_of_temporary_person = reid_system(frame,model_analysis["temporary_people"])
                         element["reid_result"] = list_of_temporary_person
                         local_reid_queue.put(element) ### One REID queue for id queue
                         self.REID_COUNTER=0
@@ -114,7 +114,7 @@ class ProcessManager:
                 if not local_id_queue.empty(): 
                     element = local_id_queue.get_nowait()
                     if self.REID_COUNTER % (self.REID_SKIP_FRAME+1) == 0:
-                        element["reid_result"] = element["model_analysis"]["temporary_persons"]
+                        element["reid_result"] = element["model_analysis"]["temporary_people"]
                         local_reid_queue.put(element) ### Just repeats ID output
                         self.REID_COUNTER=0
                     self.REID_COUNTER+=1

@@ -62,14 +62,14 @@ def main():
                 
                 ###gets the results that we want to see
                 model_analysis = element["model_analysis"]
-                return_from_watch_permanence = element["return_from_watch_permanence"]
-                return_from_watch_movement = element["return_from_watch_movement"]
+                return_from_permanence_watcher = element["return_from_permanence_watcher"]
+                return_from_movement_watcher = element["return_from_movement_watcher"]
                 result = model_analysis["result"] ### !!!!!!!!!!!!!!!!!!!!!!! This line is sensitive to the model type !!!!!!!!!!!!!!!!!!!!!!!!!!!
                 
                 ### LOG so we can see who was classified as moving together
-                for temp_person in return_from_watch_permanence:
+                for temp_person in return_from_permanence_watcher:
                     write_log(str(temp_person.id))
-                for temp_person in return_from_watch_movement:
+                for temp_person in return_from_movement_watcher:
                     print("SPECIAL\n",temp_person)
                     write_log(str(temp_person.id),"log_2.txt")
                 
