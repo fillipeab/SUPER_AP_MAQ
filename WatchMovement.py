@@ -3,40 +3,23 @@ from dataclasses import dataclass, field
 from typing import Any
 from TempPerson import TempPerson
 from scipy.stats import trim_mean
+from ultralytics.utils.metrics import bbox_iou
 
 
 @dataclass
 class WatchMovement:
-    permanent_persons_counter_dict : dict[int,int] = field(default_factory=dict) ###dict with id -> times seen
-    persons_position_dict          : dict[int,[float,int] = field(default_factory=dict) ###dict que faz id -> [frames sem se mover, pos]
-    movement_threshold             : int   = 0 ###Ideally, its best to define it as 1,5 times the smaller value of a person square[X or Y]. This value is likely to be their widht. The best is to consider an average.
-    MOVEMENT_THRESHOLD_COUNT       : int   = 0
-    MOVEMENT_THRESHOLD_UPDATE      : int   = 100
+    permanent_persons_counter_dict : dict[int, int] = field(default_factory=dict) ###dict with id -> times seen
+    changing_pos_dict              : dict[int, int] = field(default_factory=dict) ###dict with id -> value. When someone moves(IOU), this value starts increasing, till it gets to NEW_POS_THRESHOLD. Then, if the person is not moving, it updates their POS, and goes to -MOVING_THRESHOLD. It will increase till it gets to 0. When this happens, their movement is reset to 0.
+    persons_position_dict          : dict[int,  bb] = field(default_factory=dict) ###dict id -> [frames_after_move,old_pos] ||> when gets to zero, update pos AND mov_dic
+    persons_mov_dict               : dict[int,[float]] = field(default_factory=dict) ###dict id -> movement
     DISCART_THRESHOLD              : int   = -5
-    OLD_POS_THRESHOLD              : int   = 20 ###Number of frames "in same place" to forget the old movement
+    SAME_PLACE_THRESHOLD           : int   = 0.6 ### IoU that defines someone that hasn't moved
+    NEW_POS_THRESHOLD              : int   = 20
+    MOVING_THRESHOLD               : int   = 10  ###Number of frames before forgeting the old position
     
     def __call__(list_from_WP : list[TempPerson]): ###list_of_temporary_persons_from_WatchPermanence
         p_pc_dict = self.permanent_persons_counter_dict
         p_pos_dict = self.persons_position_dict
-        
-        
-        ### part 0 ###
-        ###Reconfigurate movement threshold###
-        if self.MOVEMENT_THRESHOLD_COUNT>=self.MOVEMENT_THRESHOLD_UPDATE:
-            self.movement_threshold=0
-            self.MOVEMENT_THRESHOLD_COUNT=0
-        self.MOVEMENT_THRESHOLD_COUNT+=1
-        ###finding movement threshold
-        if self.movement_threshold == 0:
-           smaller_side = []
-           for temp_person in list_from_WP:
-                x1, y1, x2, y2 = temp_person.bb
-                smaller = (x2 - x1)
-                if (y2-y1)<(smaller):
-                    smaller = (y2-y1)
-                smaller_side.append(smaller)   
-            self.movement_threshold=trim_mean(smaller_side,0.2)  ###makes the mean, excluding the 20% mais extremos de cada lado
-        ### part 0 - end ###
         
         ### part 1 - entry interaction ###
         for temp_person in list_from_WP:
@@ -57,7 +40,6 @@ class WatchMovement:
                 p_pc_dict[tp_id]  = 2
                 p_pos_dict[tp_id] = [0, temp_person.bb]
             ### FINDING THE MOVEMENT THRESHOLD ###
-                
         ### part 1 - end ###
         
         ### part 2 - update memory
@@ -76,3 +58,4 @@ class WatchMovement:
             p_pc_dict.pop(key,None)
         ### part 2 - end ###
         
+        ### part 3 - checar quem se moveu ### -> atualizar 
