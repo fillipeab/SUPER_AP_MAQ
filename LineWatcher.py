@@ -35,7 +35,12 @@ class LineWatcher_neighbour(): ###Needs way more work, and maybe it's not the be
     people_neighbour_id_dict      : dict  = field(default_factory=dict) ###List to remember people and their neighbours
     people_timeout_dict           : dict  = field(default_factory=dict) ###Timeout to erasure
     previous_number_of_people_in_line       : int = 0
-    ###PROBABILITY_SKIPPER_
+    
+    #Neighbour disruption variables
+    max_number_of_neighbours = 0
+    min_number_of_neighbours = 255 ### to our code, that's almost like infinity. Remember people can't really compact that much
+    
+    ###PROBABILITY_SKIPPER###
     PS_MORE_PEOPLE_IN_LINE  : float = 0.2  ###If there's more people
     PS_NOT_NEAR_BORDER      : float = 0.2  ###If there's more people, and in the middle, the change is big
     PS_NEIGHBOUR_DISRUPTION : float = 0.5  ##must happen
@@ -49,7 +54,6 @@ class LineWatcher_neighbour(): ###Needs way more work, and maybe it's not the be
     ### 3 neighbours    - 25%
 
     ###static method
-    @staticmethod
     def calculate_neighbourhood(list_of_temporary_people, radius=50):
         # Array com: [x_center, y_center, person_id]
         centers_with_ids = np.array([
@@ -90,7 +94,6 @@ class LineWatcher_neighbour(): ###Needs way more work, and maybe it's not the be
             smaller_dimension_list.append(smaller_dimension)
         trim_mean(smaller_dimension_list, percent_cut) ###Finds the mean, cutting extremes
     
-    
     def is_near_border(self, bbox, frame_shape, margin_percent=0.05):
         """
         Check if bbox [x1,y1,x2,y2] is near frame border.
@@ -106,6 +109,15 @@ class LineWatcher_neighbour(): ###Needs way more work, and maybe it's not the be
         return (x1 <= margin or x2 >= w - margin or 
                 y1 <= margin or y2 >= h - margin)
 
+    def neighbourhood_disruption(self,person_id):
+        ### Lets balance like 50% to their number, 50% to their neighbours influence
+        if self.max_number_of_neighbours == self.min_number_of_neighbours:
+            return 0
+        ### person proper disruption
+        neighbour_number = len(self.people_neighbour_id_dict[person_id])
+        neighbour_self_disruption = (self.max_number_of_neighbours-neighbour_number)/(self.max_number_of_neighbours-self.min_number_of_neighbours)
+
+        ### Comparisson with other people
 
 
     def __call__(self,list_of_temporary_people : list[TempPerson], frame_shape : Tuple[int,...] = (720, 1280, 3)): ###LineWatcher is called
@@ -130,6 +142,12 @@ class LineWatcher_neighbour(): ###Needs way more work, and maybe it's not the be
                     pass
             self.people_neighbour_id_dict[t_id] = new_neighbourhood_dict[t_id] ### Adds/updates neighbourhood
             self.people_timeout_dict[t_id] = self.ERASE_FROM_DICT_TIMEOUT ### Anyone has the timeout redifined
+
+            ###update min/max - for neighbourhood disruption
+            if self.max_number_of_neighbours < len(new_neighbourhood_dict):
+                self.max_number_of_neighbours = len(new_neighbourhood_dict)
+            if self.min_number_of_neighbours > len(new_neighbourhood_dict):
+                self.min_number_of_neighbours = len(new_neighbourhood_dict)
             
         ###End of 1###
         ### new people localized ###
@@ -143,7 +161,11 @@ class LineWatcher_neighbour(): ###Needs way more work, and maybe it's not the be
                 skipping_probability += base_skipping_probability
                 if not self.is_near_border(temp_person.bb,frame_shape): ###se nao for, + chance de ser um fura fila
                     skipping_probability += self.PS_NOT_NEAR_BORDER
-                ### Calculating neighbourhood disruption
+                ### Calculating neighbourhood disruption - but how? well, we just need to check the number of entries of this person\
+                ### max_entries ---- person_entries ---- minimum entries.
+                ### It's reasonable that a new person would be close to the minimum. The farthest from it, the more probable to be skiping.
+                ### Also, the same goes for their new neighbours. If their neighbours are close to the top, basically.
+
 
 
         ###Finally, updates variables

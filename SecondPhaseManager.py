@@ -46,7 +46,9 @@ class SecondPhaseManager(): ### Way more linear than phase 1
             if not local_queue.empty():
                 element = local_queue.get_nowait()
                 list_of_temporary_person = element["reid_result"]
-                return_from_permanence_watcher, return_from_movement_watcher, return_from_line_watcher = local_second_process_manager(list_of_temporary_person)
+                frame = element["frame"]
+                frame_shape = frame.shape
+                return_from_permanence_watcher, return_from_movement_watcher, return_from_line_watcher = local_second_process_manager(list_of_temporary_person,frame_shape)
                 element["return_from_permanence_watcher"] = return_from_permanence_watcher
                 element["return_from_movement_watcher"] = return_from_movement_watcher
                 element["return_from_line_watcher"] = return_from_line_watcher

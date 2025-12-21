@@ -11,6 +11,7 @@ class SecondProcessManager(): ###Allow for best integration of all steps
     ### permanence_watcher -> movement_watcher -> watch_line -> skipper_buster
     permanence_watcher      : PermanenceWatcher = field(default_factory=PermanenceWatcher)
     movement_watcher        : MovementWatcher   = field(default_factory=MovementWatcher)
+    line_watcher            : LineWatcher       
     SKIP_PERMANENCE         : int   = 0
     SKIP_MOVEMENT           : int   = 0
     SKIP_LINE               : int   = 0
@@ -25,8 +26,10 @@ class SecondProcessManager(): ###Allow for best integration of all steps
             if self.counter % ((self.SKIP_PERMANENCE*self.SKIP_MOVEMENT)+1) == 0:
                 return_from_movement_watcher = self.movement_watcher(return_from_permanence_watcher)
                 self.counter=0
+                """"
                 if self.counter % (self.SKIP_PERMANENCE*self.SKIP_MOVEMENT*self.SKIP_LINE+1) == 0:
-                    return_from_line_watcher = self.watch_line(return_from_movement_watcher,frame_shape)
+                    return_from_line_watcher = self.line_watcher(return_from_movement_watcher,frame_shape)
+                    """
                 
         self.counter+=1
         ### por hora ###
