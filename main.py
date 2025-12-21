@@ -77,11 +77,17 @@ def main():
                     print("SPECIAL\n",temp_person)
                     write_log(str(temp_person.id),"log_2.txt")
                 
-                ###writes the frame, altered by YOLO, in a video
+                ### VIDEO WRITING ###
+                
+
                 frame_from_yolo = result[0].plot()
                 frame_to_write = bbdrawer(frame_from_yolo,return_from_permanence_watcher)
                 videowriter(frame_to_write)
-                
+
+
+
+                ### VIDEO WRITING - END ###
+
                 ###prints how many outputs we already have
                 if listed_counter%50 == 0: ###printing takes a lot of time. Do it only for important values
                     print ("listed_counter: ",listed_counter) ### see if the process is getting to the end
