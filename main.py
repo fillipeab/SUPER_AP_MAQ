@@ -70,6 +70,7 @@ def main():
                 for temp_person in return_from_watch_permanence:
                     write_log(str(temp_person.id))
                 for temp_person in return_from_watch_movement:
+                    print("SPECIAL\n",temp_person)
                     write_log(str(temp_person.id),"log_2.txt")
                 
                 ###writes the frame, altered by YOLO, in a video
@@ -117,6 +118,7 @@ def main():
     except KeyboardInterrupt:
         print("interrupted")
     finally:
+        del videowriter
         cv2.destroyAllWindows()
         os._exit(1)
     
