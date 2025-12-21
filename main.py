@@ -62,6 +62,15 @@ def main():
             if not output_queues[queue_index].empty():
                 ### get output from queue
                 element = output_queues[queue_index].get_nowait()
+                """
+                element in output queue will have the format - after 1 and second phase
+                {"frame" : frame,
+                "model_analysis" : model_analysis,
+                "reid_result" : list_of_temporary_person,    
+                "return_from_permanence_watcher" : return_from_permanence_watcher,
+                "return_from_movement_watcher" : return_from_movement_watcher,
+                "return_from_line_watcher" : return_from_line_watcher}
+                """
                 listed_counter+=1
                 
                 ###gets the results that we want to see
@@ -77,17 +86,24 @@ def main():
                     print("SPECIAL\n",temp_person)
                     write_log(str(temp_person.id),"log_2.txt")
                 
-                ### VIDEO WRITING ###
                 
-
+                ### VIDEO WRITER ###
+                ###writes the frame, altered by YOLO, in a video
                 frame_from_yolo = result[0].plot()
-                frame_to_write = bbdrawer(frame_from_yolo,return_from_permanence_watcher)
+                
+                ###Compare REID with dict coming from  return_from_line_watcher
+                list_of_in_line  = []
+                list_of_skippers = []                    ###filthy skippers!!!
+                for temp_person in element["return_from_reid"]
+                ### Finally writes in frame
+                
+                frame_to_write = bbdrawer1(frame_from_yolo,return_from_permanence_watcher)
+                
                 videowriter(frame_to_write)
-
-
-
-                ### VIDEO WRITING - END ###
-
+                
+                ### VIDEO WRITER - END ###
+                
+                
                 ###prints how many outputs we already have
                 if listed_counter%50 == 0: ###printing takes a lot of time. Do it only for important values
                     print ("listed_counter: ",listed_counter) ### see if the process is getting to the end
