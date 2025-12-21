@@ -30,7 +30,7 @@ def main():
     ###Program variables
     ### phase 1 ###
     first_phase=FirstPhaseManager(
-    sources = video_sources,
+    video_sources = video_sources,
     SLEEP_TIME = SLEEP_TIME,
     ID_SKIP_FRAME=ID_SKIP_FRAME,
     REID_SKIP_FRAME=REID_SKIP_FRAME

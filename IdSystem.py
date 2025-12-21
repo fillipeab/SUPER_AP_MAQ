@@ -53,7 +53,7 @@ class YoloID8n():
     model_version : str = 'yolov8n.pt' ### You might use any of this
 
     ###Loading model once
-    model : ClassVar[Any] = None
+    model : Any = None
 
     
     def __post_init__(self):

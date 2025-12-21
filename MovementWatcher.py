@@ -12,7 +12,7 @@ class MovementWatcher:
     permanent_people_counter_dict : dict[int, int] = field(default_factory=dict) ###dict with id -> times seen
     people_dict                   : dict[int,  TempPerson] = field(default_factory=dict)
     changing_pos_dict              : dict[int, int] = field(default_factory=dict) ###dict with id -> value. When someone moves(IOU), this value starts increasing, till it gets to NEW_POS_THRESHOLD. Then, it updates their POS, and goes to -MOVING_THRESHOLD. It will increase till it gets to 0. When this happens, their movement is reset to 0.
-    people_mov_dict               : dict[int, tensor(4,)] = field(default_factory=dict) ###dict id -> movement
+    people_mov_dict               : dict[int, Any] = field(default_factory=dict) ###dict id -> movement
     DISCART_THRESHOLD              : int     = -5
     SAME_PLACE_IOU                 : float   = 0.1 ### IoU that defines someone that hasn't moved
     CYCLES_TO_UPDATE_POS           : int     = 240 ### IF 60 FPS, this is just 2 seconds

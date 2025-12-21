@@ -183,7 +183,7 @@ if __name__ == "__main__":
     n_of_sources, queues = video_feed_manager()
     
     ### Process manager
-    process_manager = ProcessManager(queues_from_sources=queues)
+    process_manager = FirstProcessManager(queues_from_sources=queues)
     
     ### START ###
     video_feed_manager()

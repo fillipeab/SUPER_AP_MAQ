@@ -9,8 +9,8 @@ from SecondProcessManager import SecondProcessManager
 @dataclass
 class SecondPhaseManager(): ### Way more linear than phase 1
     SLEEP_TIME              : float = 0.000001
-    SKIP_PERMANENCE         : int   = 0
-    SKIP_MOVEMENT           : int   = 0 ### REMEMBER, THIS IS RUN ONLY WHEN PERMANENCE IS NOT SKIPPED. WHICH MENAS THAT IT WILL SKIP SKIP_PERMANENCE*SKIP_MOVEMENT
+    SKIP_PERMANENCE         : int   = 5
+    SKIP_MOVEMENT           : int   = 3 ### REMEMBER, THIS IS RUN ONLY WHEN PERMANENCE IS NOT SKIPPED. WHICH MENAS THAT IT WILL SKIP SKIP_PERMANENCE*SKIP_MOVEMENT
     SKIP_LINE               : int   = 0
     ### ideally, there's no reason to skip the skipper_buster 
     """

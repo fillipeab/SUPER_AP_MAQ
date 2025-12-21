@@ -13,22 +13,32 @@ import cv2
 
 @dataclass
 class FirstPhaseManager:
-    sources             : list = field(default_factory=list)
-    ID_SKIP_FRAME       : int = 0
-    REID_SKIP_FRAME     : int = 4
-    SLEEP_TIME          : float = 0.000001
-    queues_from_sources : list = field(default_factory=list)
-    output_queues       : list = field(default_factory=list)     
+    ### VIDEO _ CONFIGS ###
+    video_sources         : list = field(default_factory=list)
+    MAX_QUEUE_FRAMES      : int = 100  ###A WAY TO AVOID MEMORY OVERLOAD
+    ### VIDEO _ CONFIGS - END ###
+
+    ### PROCESSING CONFIGS ###
+    ID_SKIP_FRAME         : int = 0 ###SKIPPING THIS PROCESS WILL SHORTEN THE VIDEO: THE FRAMES FROM HERE ARE THE SOURCE OF THE OUTPUT VIDEO
+    REID_SKIP_FRAME       : int = 10
+    ### PROCESSING CONFIGS - END ###
+
+    ### THREADING CONFIGS ###
+    SLEEP_TIME            : float = 0.000001
+    ### THREADING CONFIGS - END ###
+
+    ### Objects for operation ###
+    queues_from_sources   : list = field(default_factory=list)
+    output_queues         : list = field(default_factory=list)     
     ### element in output queue should have the following format {"frame" : frame, "model_analysis" : model_analysis, "reid_result" : list_of_temporary_person}
     video_feed_manager    : VideoFeedManager    = field(default_factory=VideoFeedManager)
     first_process_manager : FirstProcessManager = field(default_factory=FirstProcessManager)
     
     def __call__(self):
-        video_feed_manager=VideoFeedManager(self.sources)
+        video_feed_manager=VideoFeedManager(video_sources = self.video_sources,MAX_QUEUE_FRAMES = self.MAX_QUEUE_FRAMES)
         _, self.queues_from_sources = video_feed_manager() ###Starts video_feed_manager
         first_process_manager = FirstProcessManager(queues_from_sources = self.queues_from_sources, ID_SKIP_FRAME = self.ID_SKIP_FRAME, REID_SKIP_FRAME = self.REID_SKIP_FRAME, SLEEP_TIME=self.SLEEP_TIME)
-        number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, self.output_queues = first_process_manager() 
-        ###number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, output_queues ###Start first_process_manager 
+        number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, self.output_queues = first_process_manager()  ###Start first_process_manager 
         ### element in output queue should have the following format {"frame" : frame, "model_analysis" : model_analysis, "reid_result" : list_of_temporary_person}
         return number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, self.output_queues
         
@@ -36,8 +46,8 @@ class FirstPhaseManager:
 
 if __name__ == "__main__":
     queue_index = 0
-    video_sources=["auxiliares/People_in_line.mp4"]
-    first_phase_manager=FirstPhaseManager(sources = video_sources)
+    video_sources = ["auxiliares/People_in_line.mp4"]
+    first_phase_manager=FirstPhaseManager(video_sources = video_sources)
     SLEEP_TIME = first_phase_manager.SLEEP_TIME
     number_output_queues, queues_from_sources, id_processed_queues, reid_processed_queues, output_queues = first_phase_manager()
     
@@ -76,7 +86,7 @@ if __name__ == "__main__":
                     print ("listed_counter: ",listed_counter) ### see if the process is getting to the end
                 
             ### breaking mechanism ###
-            if doom_counter%5 == 0: ###printing takes a lot of time. Do it only for important values
+            if doom_counter%50 == 0: ###printing takes a lot of time. Do it only for important values
                     print (doom_counter) ### see if the process is getting to the end
             if doom_counter == 1000:
                 try: ###checking for empty queues
