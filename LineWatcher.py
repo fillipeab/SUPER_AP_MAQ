@@ -30,8 +30,8 @@ from TempPerson import TempPerson
 class LineWatcher(): ###Needs way more work, and maybe it's not the best
     ### receives the list of people
     PERCENT_CUT_TRIM_MEAN         : float = 0.1
-    NEIGHBOUR_MAX_RADIUS_DISTANCE : float = 1   ###How distance, in smaller_axis value, can a neighbour be - This will be passed to find_nearest_neighbors
-    ERASE_FROM_DICT_TIMEOUT       : int   = 180 ###Remember, that means the number of runs to erase an entry
+    NEIGHBOUR_MAX_RADIUS_DISTANCE : float = 1     ###How distance, in smaller_axis value, can a neighbour be - This will be passed to find_nearest_neighbors
+    ERASE_FROM_DICT_TIMEOUT       : int   = 30    ###Remember, that means the number of runs to erase an entry
     people_neighbour_id_dict      : dict  = field(default_factory=dict) ###List to remember people and their neighbours
     people_timeout_dict           : dict  = field(default_factory=dict) ###Timeout to erasure
     previous_number_of_people_in_line       : int = 0
@@ -55,16 +55,11 @@ class LineWatcher(): ###Needs way more work, and maybe it's not the best
 
     ###static method
     def calculate_neighbourhood(self, list_of_temporary_people, radius : float =50):
-        # Array com: [x_center, y_center, person_id]
-        if len(list_of_temporary_people) < 2: 
-            return {p.id: [] for p in list_of_temporary_people} if list_of_temporary_people else {}
     
-        # Array sempre 2D
         centers_with_ids = np.array([[(p.bbox[0]+p.bbox[2])/2, (p.bbox[1]+p.bbox[3])/2, p.id] 
                         for p in list_of_temporary_people])
         
-        # Árvore só com coordenadas (ignora ID na distância)
-        tree = cKDTree(centers_with_ids[:, :2])  # Apenas x,y
+        tree = cKDTree(centers_with_ids[:, :2])
         neighbors_by_id = {}
         
         for i, row in enumerate(centers_with_ids):
@@ -75,7 +70,6 @@ class LineWatcher(): ###Needs way more work, and maybe it's not the best
 
             ###indices.remove(i) - person is neighbour of themselves
             
-            # Pega IDs dos vizinhos
             neighbors_ids = torch.tensor([int(centers_with_ids[idx][2]) for idx in indices])
             neighbors_by_id[person_id] = neighbors_ids
         return neighbors_by_id
@@ -158,7 +152,8 @@ class LineWatcher(): ###Needs way more work, and maybe it's not the best
             else: ###old people in dict
                 ###compare to find internal line skipers - only the bold ones
                 old_neighbour = self.people_neighbour_id_dict[t_id]
-                IoU_neighbourhood = bbox_iou(old_neighbour[t_id],new_neighbourhood_dict[t_id])
+                new_neighbourhood = new_neighbourhood_dict[t_id]
+                IoU_neighbourhood = bbox_iou(old_neighbour,new_neighbourhood)
                 if IoU_neighbourhood < self.BOLD_INTERNAL_SKIPPER:
                     ###FOUND A BOLD ONE
                     return_dict[t_id] = "skipper"
@@ -197,9 +192,9 @@ class LineWatcher(): ###Needs way more work, and maybe it's not the best
 
                 ### FINALLY, CHECKS FOR SKIPPERS ###
                 if skipping_probability>self.PS_CONFIRMED_SKIPPER:
-                    return_dict[temp_person]="skipper"
+                    return_dict[temp_person.id]="skipper"
                 else:
-                    return_dict[temp_person]="in line" ### WITH THIS, EVERYONE IS EITHER CLASSIFIED AS "IN LINE" OR "SKIPPER". They can still be spotted skipping. The process of return someone to in_line was not implemented. The reason is simple. It would require some degree of guessing, and could make the model go in conflict with itself. Future implementations, using machine learning, could get it without much trouble, especially in a classification problem such as this.
+                    return_dict[temp_person.id]="in line" ### WITH THIS, EVERYONE IS EITHER CLASSIFIED AS "IN LINE" OR "SKIPPER". They can still be spotted skipping. The process of return someone to in_line was not implemented. The reason is simple. It would require some degree of guessing, and could make the model go in conflict with itself. Future implementations, using machine learning, could get it without much trouble, especially in a classification problem such as this.
         ###Finally, updates variables
         self.previous_number_of_people_in_line=number_people_in_line
         

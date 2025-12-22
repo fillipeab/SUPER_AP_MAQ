@@ -58,6 +58,7 @@ class ThirdPhaseManager():
 
         sleep_time = SleepTime(self.SLEEP_TIME)
         listed_counter = 0
+        local_video_writer.start()
         try:
             while True:
                 """
@@ -129,8 +130,7 @@ class ThirdPhaseManager():
         except Exception as e:
             print("Exception in register :", e)
         finally:
-            for video_writer in self.list_of_video_writers:
-                del video_writer
+            local_video_writer.release()
 
 
     def start(self):
@@ -143,6 +143,9 @@ class ThirdPhaseManager():
             thread.daemon = True ###Doesn't stop the program from ending
             thread.start() ###Create the thread
 
+    def end(self):
+        for videowriter in self.list_of_video_writers:
+            videowriter.release()
 
     def __call__(self):
         self.start()

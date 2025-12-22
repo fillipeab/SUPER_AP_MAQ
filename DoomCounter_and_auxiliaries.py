@@ -14,7 +14,9 @@ class DoomCounter():
    queues_to_check           : list[Queue] = field(default_factory=list)
    CYCLES_TO_ACTION          : int   = 100
    SLEEP_TIME                : float = 0.000_001
-   waiting_multiplier_normal : int = 1 #1_000_000 ###VERY ocasional
+   waiting_multiplier_normal : int = 1_000 ###VERY ocasional
+   print_queue_stats         : bool = False
+   print_counting            : bool = False
    
    def __call__(self):
         doom_counter = 0
@@ -26,7 +28,8 @@ class DoomCounter():
                 ### breaking mechanism - stops the program once all queues are empty. Keep in mind that second_phase barely uses queues ###
                 if doom_counter % self.CYCLES_TO_ACTION == 0: ###printing takes a lot of time. Do it only for important values
                         ###ACTIONS TO COMPLETE###
-                        ###print (doom_counter) ### see if the process is getting to the end
+                        if self.print_counting:
+                            print ("doom counter :",doom_counter) ### see if the process is getting to the end
                         gc.collect()
                 if doom_counter == 1000:
                     try: ###checking for empty queues
@@ -44,13 +47,17 @@ class DoomCounter():
                         else:
                             doom_flag=0
                             waiting_multiplier = 0 + self.waiting_multiplier_normal
-                        print(
-                            "\n\nobjects in queue_from_source", self.queues_to_check[0].qsize(),
-                            "\nobjects in queue_from_id", self.queues_to_check[1].qsize(),
-                            "\nobjects in reid_processed_queues", self.queues_to_check[2].qsize(),
-                            "\nobjects in first_phase_output", self.queues_to_check[3].qsize(),
-                            "\nobjects in output second phase", self.queues_to_check[4].qsize()
-                        )
+                        if self.print_queue_stats:
+                            print(
+                                "\n\n============================================="
+                                "\nobjects in queue_from_source", self.queues_to_check[0].qsize(),
+                                "\nobjects in queue_from_id", self.queues_to_check[1].qsize(),
+                                "\nobjects in reid_processed_queues", self.queues_to_check[2].qsize(),
+                                "\nobjects in first_phase_output", self.queues_to_check[3].qsize(),
+                                "\nobjects in output second phase", self.queues_to_check[4].qsize(),
+                                "\n============================================="
+                                "\n\n"
+                            )
                     except Exception as e:
                         print("Erro: ",e)
                         
@@ -96,7 +103,7 @@ class VideoWriter:
     width: int = 1920
     height: int = 1080
     
-    def __post_init__(self):
+    def start(self):
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         self.writer = cv2.VideoWriter(
             self.output_file, 
@@ -104,7 +111,9 @@ class VideoWriter:
             self.fps, 
             (self.width, self.height)
         )
-    
+    def release(self):
+        self.writer.release()
+
     def update_file_name(self,new_name : str):
         self.output_file = new_name
     

@@ -38,7 +38,7 @@ def main():
     ###DEBUG###
     show_monitor_thread = True
     ### PROGRAM VARIABLES - END ###
-
+    
     try:
         ### phase 1 ###
         first_phase=FirstPhaseManager(
@@ -99,18 +99,19 @@ def main():
     except KeyboardInterrupt:
         print("interrupted")
     finally:
+        third_phase.end()
         cv2.destroyAllWindows()
         os._exit(1)
     
 
-def monitor_threads(interval=120):
+def monitor_threads(interval=12_000):
     """Run after 120s, with it follows the expected"""
     while True:
-        print(f"\n=== Threads ativas: {threading.active_count()} ===")
+        print(f"\n\n=== Threads ativas: {threading.active_count()} ===")
         
         for thread in threading.enumerate():
             print(f"  {thread.name}: {'Alive' if thread.is_alive() else 'Dead'} - Daemon: {thread.daemon}")
-        
+        print(f"\n\n========================")
         time.sleep(interval)
 
 

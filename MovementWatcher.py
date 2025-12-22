@@ -1,30 +1,33 @@
 ### Process 1, phase 2: find sync_movement
 from dataclasses import dataclass, field
 from typing import Any
-from TempPerson import TempPerson
-from ultralytics.utils.metrics import bbox_iou
-import torch
 
+from ultralytics.utils.metrics import bbox_iou
+from sklearn.cluster import DBSCAN
+import torch
+import numpy as np
+
+from TempPerson import TempPerson
 
 @dataclass
 class MovementWatcher:
     ### MovementWatcher[list[TempPerson]] -> list[TempPerson]
-    permanent_people_counter_dict : dict[int, int] = field(default_factory=dict) ###dict with id -> times seen
-    people_dict                   : dict[int,  TempPerson] = field(default_factory=dict)
+    permanent_people_counter_dict  : dict[int, int] = field(default_factory=dict) ###dict with id -> times seen
+    people_dict                    : dict[int,  TempPerson] = field(default_factory=dict)
     changing_pos_dict              : dict[int, int] = field(default_factory=dict) ###dict with id -> value. When someone moves(IOU), this value starts increasing, till it gets to NEW_POS_THRESHOLD. Then, it updates their POS, and goes to -MOVING_THRESHOLD. It will increase till it gets to 0. When this happens, their movement is reset to 0.
-    people_mov_dict               : dict[int, Any] = field(default_factory=dict) ###dict id -> movement
-    DISCART_THRESHOLD              : int     = -5
-    SAME_PLACE_IOU                 : float   = 0.1 ### IoU that defines someone that hasn't moved
-    CYCLES_TO_UPDATE_POS           : int     = 240 ### IF 60 FPS, this is just 2 seconds
-    CYCLES_TO_FORGET_MOVE          : int     = 720 ###Number of frames before forgeting the old position and movement direction
-    LIMIT_SEEN_COUNTER             : int     = 10
+    people_mov_dict                : dict[int, Any] = field(default_factory=dict) ###dict id -> movement
+    SAME_PLACE_IOU                 : float   = 0.7 ### IoU that defines someone that has started a movement
+    CYCLES_TO_UPDATE_POS           : int     = 60  ### Cycles between start of movement and "end". That is, to register the new position, and the movement
+    CYCLES_TO_FORGET_MOVE          : int     = 240 ###Number of frames before forgeting the old position and movement direction
+    TIME_TO_FORGET                 : int     = 12  ###Frames before someone is erased from dicts
+    iterator                       : int     = 0
 
     def __call__(self, list_from_WP : list[TempPerson]): ###list_of_temporary_people_from_PermanenceWatcher
         p_pc_dict = self.permanent_people_counter_dict
         people_dict = self.people_dict
         p_changing_pos_dict = self.changing_pos_dict
         p_mov_dict = self.people_mov_dict
-        
+        self.iterator+=1
         ### part 1 - entry interaction ###
         for temp_person in list_from_WP:
             
@@ -32,15 +35,13 @@ class MovementWatcher:
             tp_id = temp_person.id
             if tp_id in p_pc_dict: 
                 ### person already in dict
-                if p_pc_dict[tp_id]<0:  ###Deals with Discart_threshold###
-                    p_pc_dict[tp_id]=0
-                p_pc_dict[tp_id] += 2 ###important
+                p_pc_dict[tp_id] = (self.TIME_TO_FORGET)
                 ### end ###    
                 ### MOVEMENT CHECKING ###
-                iou_matrix = bbox_iou(temp_person.bb, people_dict[tp_id].bb) ###to check for movement
-                
-                if p_changing_pos_dict[tp_id]<=0: ### >0 means its already moving. =<0 means it either has been moved, or is still in place
+                if p_changing_pos_dict[tp_id] <= 0: ### >0 means its already moving. =<0 means it either has been moved, or is still in place
+                    iou_matrix = round(float(bbox_iou(temp_person.bb, people_dict[tp_id].bb)),3) ###to check for movement
                     if iou_matrix < self.SAME_PLACE_IOU:
+                        print("someone has started MOVING:",tp_id,"turn: ",self.iterator)
                         p_changing_pos_dict[tp_id]=1  ### starts the counting
                 else: ###It is under change
                     if p_changing_pos_dict[tp_id]==self.CYCLES_TO_UPDATE_POS: ###has reach the threshold. Changes must be accounted for
@@ -52,7 +53,7 @@ class MovementWatcher:
             ### END OF UPDATING ###
             else:
             ### Added to dict now
-                p_pc_dict[tp_id]  = 2
+                p_pc_dict[tp_id]  = self.TIME_TO_FORGET
                 people_dict[tp_id] = temp_person
                 p_changing_pos_dict[tp_id] = 0
                 p_mov_dict[tp_id] = torch.tensor([0,0,0,0])
@@ -63,14 +64,9 @@ class MovementWatcher:
         remove_from_p_pc_dict = []
         for key in p_pc_dict:
             p_pc_dict[key]-=1
-            ### Maximum limit
-            if p_pc_dict[key] > self.LIMIT_SEEN_COUNTER:
-                p_pc_dict[key] = self.LIMIT_SEEN_COUNTER
-            ### Minimum limit
-            if p_pc_dict[key] < -self.DISCART_THRESHOLD: ###Remove from memory person absent for too long - avoids memory overflow
+            if p_pc_dict[key] <= 0: ###Remove from memory person absent for too long - avoids memory overflow
                 remove_from_p_pc_dict.append(key)
-        ##remove from dict##
-        for key in remove_from_p_pc_dict:
+        for key in remove_from_p_pc_dict: ##remove from dict##
             people_dict.pop(key,None)
             p_pc_dict.pop(key,None)
             p_changing_pos_dict.pop(key,None)
@@ -98,12 +94,13 @@ class MovementWatcher:
         ### Part 5 - Checks for the biggest cluster of tensors -> which will correspond to the direction of the line
         ### IMPORTANT: ITS CONSIDERED THAT SYNCRONIZED MOVEMENT, IN THE AREA OF THE CAMERA, IS THE MAIN LINE. REMEMBER, THAT IS PEOPLE CONSISTENTLY IN IMAGE GOING IN THE SAME DIRECTION
         
-        selected_cluster, cluster_len = find_cluster(moved_people_dict) ###Will only return something if the group is big enough
+        selected_group = find_movement_group(moved_people_dict) ###Will only return something if the group is big enough
         
         ### Make the exporting list ###
         list_of_people_in_sync_movement = []
-        if cluster_len > 0:
-            for key in selected_cluster:
+        if len(selected_group) > 0:
+            print("finally, A GROUP!")
+            for key in selected_group:
                 list_of_people_in_sync_movement.append(people_dict[key]) ###return list of temporary people, with bb
         
         return list_of_people_in_sync_movement
@@ -111,10 +108,69 @@ class MovementWatcher:
         
         
 
-###function to find the bigest cluster - will be used to find syncronous movement
-from sklearn.cluster import DBSCAN
-import torch
-import numpy as np
+###function to find the bigest group - will be used to find syncronous movement
+
+def find_movement_group(dict_tensors, dir_weight=0.75, mag_weight=0.25, threshold=0.8):
+    n = len(dict_tensors)
+    if n < 2:
+        return list(dict_tensors.keys())
+    
+    keys = list(dict_tensors.keys())
+    features = torch.stack(list(dict_tensors.values())).cpu().numpy()
+    
+    mags = np.linalg.norm(features, axis=1)
+    moving = mags > 0.1
+    
+    if np.sum(moving) < 2:
+        return keys
+    
+    dirs = np.zeros_like(features)
+    valid_mags = mags[moving]
+    valid_features = features[moving]
+    
+    with np.errstate(divide='ignore', invalid='ignore'):
+        dirs[moving] = valid_features / valid_mags[:, np.newaxis]
+    dirs = np.nan_to_num(dirs)
+    
+    clustering = DBSCAN(eps=0.3, min_samples=2).fit(dirs[moving])
+    labels = clustering.labels_
+    
+    if np.all(labels == -1):
+        return keys
+    
+    main_label = max(set(labels) - {-1}, key=list(labels).count)
+    moving_indices = np.where(moving)[0]
+    main_mask = labels == main_label
+    main_indices = moving_indices[main_mask]
+    
+    if len(main_indices) < 2:
+        return [keys[i] for i in main_indices] if len(main_indices) > 0 else keys
+    
+    group_features = features[main_indices]
+    group_mags = mags[main_indices]
+    avg_mag = np.mean(group_mags)
+    
+    if avg_mag < 0.01:
+        return [keys[i] for i in main_indices]
+    
+    centroid = np.mean(dirs[main_indices], axis=0)
+    final_members = []
+    
+    for idx in main_indices:
+        person_dir = features[idx] / max(mags[idx], 0.01)
+        dir_sim = max(0, 1.0 - 0.5 * np.linalg.norm(person_dir - centroid))
+        
+        mag_diff = abs(mags[idx] - avg_mag) / avg_mag
+        mag_sim = max(0, 1.0 - min(mag_diff, 1.0))
+        
+        score = dir_weight * dir_sim + mag_weight * mag_sim
+        if score >= threshold:
+            final_members.append(idx)
+    
+    return [keys[i] for i in final_members] if len(final_members) >= 2 else [keys[i] for i in main_indices]
+
+
+### OLD VERSION ####
 
 def find_cluster(dict_tensors, eps=0.5, min_samples=2):
     """Retorna chaves do maior agrupamento de tensores similares."""
@@ -139,3 +195,6 @@ def find_cluster(dict_tensors, eps=0.5, min_samples=2):
     selected_cluster = [keys[i] for i, lbl in enumerate(labels) if lbl == selected_label]
     
     return selected_cluster, len(selected_cluster)
+
+
+### OLD VERSION ###  
