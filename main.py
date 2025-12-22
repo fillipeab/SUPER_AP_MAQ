@@ -18,12 +18,12 @@ def main():
 
     ### PROGRAM VARIABLES ###
     ###video parameters
-    video_sources=["auxiliares/People_in_line_2.mp4"]
+    video_sources=["auxiliares/People_in_line_2.mp4","auxiliares/video1.mp4","auxiliares/video2.mp4"]
     MAX_SOURCE_FRAMES_IN_QUEUE = 100  ###A WAY TO AVOID MEMORY OVERLOAD
 
     ###THREADING PARAMETERS##
-    SLEEP_TIME          = 0.000001
-    QUEUE_MAXIMUM_SIZE  = 25
+    SLEEP_TIME          = 0.000_001
+    QUEUE_MAXIMUM_SIZE  = 45
 
 
     ID_SKIP_FRAME       = 0

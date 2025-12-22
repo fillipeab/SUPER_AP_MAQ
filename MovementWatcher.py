@@ -16,10 +16,10 @@ class MovementWatcher:
     people_dict                    : dict[int,  TempPerson] = field(default_factory=dict) ### dict wit id -> temporary_person
     changing_pos_dict              : dict[int, int] = field(default_factory=dict) ###dict with id -> value. When someone moves(IOU), this value starts increasing, till it gets to NEW_POS_THRESHOLD. Then, it updates their POS, and goes to -MOVING_THRESHOLD. It will increase till it gets to 0. When this happens, their movement is reset to 0.
     people_mov_dict                : dict[int, Any] = field(default_factory=dict) ###dict id -> movement
-    SAME_PLACE_IOU                 : float   = 0.8 ### IoU that defines someone that has started a movement
-    CYCLES_TO_UPDATE_POS           : int     = 60  ### Cycles between start of movement and "end". That is, to register the new position, and the movement
-    CYCLES_TO_FORGET_MOVE          : int     = 240 ###Number of cycles before forgeting the old position and movement direction
-    TIME_TO_FORGET                 : int     = 12  ###Frames before someone is erased from dicts
+    SAME_PLACE_IOU                 : float   = 0.9 ### IoU that defines someone that has started a movement
+    CYCLES_TO_UPDATE_POS           : int     = 240  ### Cycles between start of movement and "end". That is, to register the new position, and the movement
+    CYCLES_TO_FORGET_MOVE          : int     = 480 ###Number of cycles before forgeting the old position and movement direction
+    TIME_TO_FORGET                 : int     = 30  ###Frames before someone is erased from dicts
     iterator                       : int     = 0
 
     def __call__(self, list_from_WP : list[TempPerson]): ###list_of_temporary_people_from_PermanenceWatcher
@@ -106,7 +106,7 @@ class MovementWatcher:
 
 ###function to find the bigest group - will be used to find syncronous movement
 
-def find_movement_group(dict_tensors, dir_weight=0.75, mag_weight=0.25, threshold=0.8):
+def find_movement_group(dict_tensors, dir_weight=4, mag_weight=1, threshold=0.6):
     n = len(dict_tensors)
     if n < 2:
         return list(dict_tensors.keys())
@@ -159,7 +159,7 @@ def find_movement_group(dict_tensors, dir_weight=0.75, mag_weight=0.25, threshol
         mag_diff = abs(mags[idx] - avg_mag) / avg_mag
         mag_sim = max(0, 1.0 - min(mag_diff, 1.0))
         
-        score = dir_weight * dir_sim + mag_weight * mag_sim
+        score = (dir_weight * dir_sim + mag_weight * mag_sim)/(dir_weight+mag_weight)
         if score >= threshold:
             final_members.append(idx)
     
