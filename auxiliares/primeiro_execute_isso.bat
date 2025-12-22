@@ -92,9 +92,8 @@ echo Pacotes instalados:
 %PYTHON_CMD% -m pip list | findstr "ultralytics matplotlib opencv torchreid"
 
 echo Instalando MobileClip
-
 cd ml-mobileclip-main
-pip install -e .
+pip install .
 
 
 echo.
