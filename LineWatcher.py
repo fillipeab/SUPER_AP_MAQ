@@ -37,13 +37,16 @@ class LineWatcher(): ###Needs way more work, and maybe it's not the best
     previous_number_of_people_in_line       : int = 0
     
     #Neighbour disruption variables
-    max_number_of_neighbours = 0
-    min_number_of_neighbours = 255 ### to our code, that's almost like infinity. Remember people can't really compact that much
+    max_number_of_neighbours             : int   = 0
+    min_number_of_neighbours             : int   = 255 ### to our code, that's almost like infinity. Remember people can't really compact that much
+    neighbour_self_disruption_weight     : float = 1
+    neighbourhood_disruption_weight      : float = 1
+
     
     ###PROBABILITY_SKIPPER###
     PS_MORE_PEOPLE_IN_LINE  : float = 0.2  ###If there's more people
     PS_NOT_NEAR_BORDER      : float = 0.2  ###If there's more people, and in the middle, the change is big
-    PS_NEIGHBOUR_DISRUPTION : float = 0.5  ##must happen
+    PS_NEIGHBOUR_DISRUPTION : float = 0.45  ##must happen
     PS_CONFIRMED_SKIPPER    : float = 0.60 ###at least 2 to be considered. More people in line is a heavy indicator. But needs the other 2
     
     BOLD_INTERNAL_SKIPPER         : float = 0.25 
@@ -99,21 +102,27 @@ class LineWatcher(): ###Needs way more work, and maybe it's not the best
         return (x1 <= margin or x2 >= w - margin or 
                 y1 <= margin or y2 >= h - margin)
 
-    def neighbourhood_disruption(self,person_id : int) -> float:
+    def neighbourhood_disruption(
+        self,
+        person_id : int, 
+        neighbour_self_disruption_weight     : float = 1,
+        neighbourhood_disruption_weight      : float = 1
+        ) -> float:
         ### Lets balance like 50% to their number, 50% to their neighbours influence
+
         if self.max_number_of_neighbours == self.min_number_of_neighbours: ###there's no way to tell who is the disruptor without making asumptions
             return 0
+        
         neighbour_self_disruption : float = 0
-        neighbourhood_disruption  : float = 0
-        neighbour_self_disruption_weight     : float = 1
-        neighbourhood_disruption_weight      : float = 1
+        neighbourhood_disruption : float = 0
 
-        ### person proper disruption ###
+        ### SELF DISRUPTION ###
         neighbour_number = len(self.people_neighbour_id_dict[person_id])
-        neighbour_self_disruption = (self.max_number_of_neighbours-neighbour_number)/(self.max_number_of_neighbours-self.min_number_of_neighbours) ### 0 means its the max. The farther from zero, the less change to be a disruptor
-        ### person proper disruption - end ###
+        neighbour_self_disruption = (self.max_number_of_neighbours-neighbour_number)/(self.max_number_of_neighbours-self.min_number_of_neighbours) ### 0 means its the max disruption. The bigger the number, the lest likely to be a disruptor
+        neighbour_self_disruption = 1 - neighbour_self_disruption ###NOW it represents the disrupting quality
+        ### SELF DISRUPTION - END ###
 
-        ### neighbourhood disruption
+        ### NEIGHBOURHOOD DISRUPTION ###
         associated_neighbours : float = 0
         an_counter            : int   = 0
         all_neighbours        : float = 0
@@ -122,7 +131,7 @@ class LineWatcher(): ###Needs way more work, and maybe it's not the best
         for person_id in self.people_neighbour_id_dict: ###for the people in his id
             all_neighbours += len(self.people_neighbour_id_dict[person_id])
             all_counter+=1
-        all_neighbours = all_neighbours/all_counter ###gets average
+        all_neighbours_mean = all_neighbours/all_counter ###gets average
         ### everyone - END ###
         
         ### associated ###
@@ -131,11 +140,11 @@ class LineWatcher(): ###Needs way more work, and maybe it's not the best
         for neighbour_id in personal_dict:
             associated_neighbours+=len(self.people_neighbour_id_dict[int(neighbour_id)])
             an_counter+=1
-        associated_neighbours = associated_neighbours/an_counter ###gets average
-        neighbourhood_disruption = (associated_neighbours - all_neighbours)/all_neighbours ### the bigger this is, the more he got to know people with a lot of contacts. Which means he's skipping
+        associated_neighbours_mean = associated_neighbours/an_counter ###gets average
+        neighbourhood_disruption = (associated_neighbours_mean - all_neighbours_mean)/all_neighbours_mean ### the bigger this is, the more he got to know people with a lot of contacts. Which means he's skipping
         ### associated - end ###
         
-        ### neighbourhood - end ###
+        ### NEIGHBOURHOOD DISRUPTION - END ###
 
         total_disruption = (neighbour_self_disruption*neighbour_self_disruption_weight+neighbourhood_disruption*neighbourhood_disruption_weight)/(neighbour_self_disruption_weight*neighbourhood_disruption_weight)
         return total_disruption
@@ -196,7 +205,10 @@ class LineWatcher(): ###Needs way more work, and maybe it's not the best
                     skipping_probability += self.PS_NOT_NEAR_BORDER
                 ### end of near the border
                 ### NEIGHBOUR DISRUPTION   ###
-                skipping_probability += self.neighbourhood_disruption(temp_person.id) * self.PS_NEIGHBOUR_DISRUPTION
+                skipping_probability += (
+                self.neighbourhood_disruption(temp_person.id, neighbour_self_disruption_weight = self.neighbour_self_disruption_weight, neighbourhood_disruption_weight = self.neighbour_self_disruption_weight)
+                *self.PS_NEIGHBOUR_DISRUPTION
+                )
                 ### NEIGHBOUR DISRUPTION - END ###
 
                 ### FINALLY, CHECKS FOR SKIPPERS ###
