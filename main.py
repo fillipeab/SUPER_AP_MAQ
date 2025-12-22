@@ -91,7 +91,7 @@ def main():
                     log.write_in_log(("from movent watcher",str(temp_person.id)))
                 
                 
-                ### VIDEO WRITER ###
+                """### VIDEO WRITER ###
 
                 frame_to_write = result[0].plot() ###writes the frame, altered by YOLO, in a video
                 
@@ -121,7 +121,7 @@ def main():
 
                 videowriter(frame_to_write)
                 
-                ### VIDEO WRITER - END ###
+                ### VIDEO WRITER - END ###"""
                 
                 
                 ###prints how many outputs we already have

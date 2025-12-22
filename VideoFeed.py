@@ -15,15 +15,15 @@ class VideoFeed:
         sleep_time = 0
         cap = cv2.VideoCapture(self.source)
         while True:
-            ret,frame = cap.read()
-            if not ret:
-                break
-            # Adicionar resultado na fila
-            self.video_queue.put(frame) ### DON'T DISCART FRAMES
-            if not (self.video_queue.qsize() > self.MAX_QUEUE_FRAMES): ###JUST WAIT MORE
-                sleep_time += self.SLEEP_TIME ###Each time it recurrently pass through here, it waits more
-            ###print("frames_in_queue:",self.video_queue.qsize(),"\n")
-            else:
+            if not (self.video_queue.qsize() >= self.MAX_QUEUE_FRAMES): ###JUST WAIT MORE
+                ret,frame = cap.read()
+                if not ret:
+                    break
+                # Adicionar resultado na fila
+                self.video_queue.put(frame) ### DON'T DISCART FRAMES
+                ###print("frames_in_queue:",self.video_queue.qsize(),"\n")
                 sleep_time = 0
+            else:
+                sleep_time += self.SLEEP_TIME ###Each time it recurrently pass through here, it waits more
             time.sleep(sleep_time)
         cap.release()

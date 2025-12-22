@@ -207,6 +207,17 @@ class LineWatcher(): ###Needs way more work, and maybe it's not the best
                     return_dict[temp_person]="in line" ### WITH THIS, EVERYONE IS EITHER CLASSIFIED AS "IN LINE" OR "SKIPPER". They can still be spotted skipping. The process of return someone to in_line was not implemented. The reason is simple. It would require some degree of guessing, and could make the model go in conflict with itself. Future implementations, using machine learning, could get it without much trouble, especially in a classification problem such as this.
         ###Finally, updates variables
         self.previous_number_of_people_in_line=number_people_in_line
+        
+        ###cleaning the dicts###
+        remove_from_dict = []
+        for key in self.people_timeout_dict:
+            self.people_timeout_dict[key]-=1
+            if self.people_timeout_dict[key]<=0:
+                remove_from_dict.append(key)
+        for key in remove_from_dict:
+            self.people_timeout_dict.pop(key,None)
+            self.people_neighbour_id_dict.pop(key,None)
+        ###lets hope this is enough###
 
         return return_dict
 

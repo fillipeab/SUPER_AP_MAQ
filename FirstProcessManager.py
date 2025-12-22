@@ -25,6 +25,8 @@ class FirstProcessManager:
     ID_processed_queues   : list = field(default_factory=list) ###Internal
     REID_processed_queues : list = field(default_factory=list) ###Internal
     Output_queues         : list = field(default_factory=list) ###External
+
+    QUEUE_MAXIMUM_SIZE    : int = 25
     ### element in output queue should have the following format {"frame" : frame, "model_analysis" : model_analysis, "reid_result" : list_of_temporary_person}
     
     ### pos_init variables
@@ -80,13 +82,14 @@ class FirstProcessManager:
         local_id_queue = self.ID_processed_queues[pos]
         while True: ###infinite loop
             time.sleep(self.SLEEP_TIME)
-            if not local_source_queue.empty():
-                frame = local_source_queue.get_nowait()
-                if self.ID_COUNTER % (self.ID_SKIP_FRAME+1) == 0:
-                    model_analysis = id_system(frame)
-                    local_id_queue.put({"frame": frame, "model_analysis" : model_analysis})
-                    self.ID_COUNTER=0
-                self.ID_COUNTER+=1
+            if not (local_id_queue.qsize() >= self.QUEUE_MAXIMUM_SIZE):
+                if not local_source_queue.empty():
+                    frame = local_source_queue.get_nowait()
+                    if self.ID_COUNTER % (self.ID_SKIP_FRAME+1) == 0:
+                        model_analysis = id_system(frame)
+                        local_id_queue.put({"frame": frame, "model_analysis" : model_analysis})
+                        self.ID_COUNTER=0
+                    self.ID_COUNTER+=1
     
     
     def process_ID_to_REID_central(self,reid_system): ###Central because it is one to each source. In the future, other architecture might be implemented 
@@ -95,15 +98,17 @@ class FirstProcessManager:
             for i in range(self.number_ID_queues): ###Check for each one of them
                 local_id_queue = self.ID_processed_queues[i]
                 local_reid_queue = self.REID_processed_queues[i]
-                if not local_id_queue.empty():
-                    element = local_id_queue.get_nowait()
-                    if self.REID_COUNTER % (self.REID_SKIP_FRAME+1) == 0:
-                        frame, model_analysis = element["frame"], element["model_analysis"]
-                        list_of_temporary_person = reid_system(frame,model_analysis["temporary_people"])
-                        element["reid_result"] = list_of_temporary_person
-                        local_reid_queue.put(element) ### One REID queue for id queue
-                        self.REID_COUNTER=0
-                    self.REID_COUNTER+=1
+                
+                if not (local_reid_queue.qsize() >= self.QUEUE_MAXIMUM_SIZE):
+                    if not local_id_queue.empty():
+                        element = local_id_queue.get_nowait()
+                        if self.REID_COUNTER % (self.REID_SKIP_FRAME+1) == 0:
+                            frame, model_analysis = element["frame"], element["model_analysis"]
+                            list_of_temporary_person = reid_system(frame,model_analysis["temporary_people"])
+                            element["reid_result"] = list_of_temporary_person
+                            local_reid_queue.put(element) ### One REID queue for id queue
+                            self.REID_COUNTER=0
+                        self.REID_COUNTER+=1
     
     def skip_REID_central(self,reid_system):
         while True:
@@ -111,13 +116,14 @@ class FirstProcessManager:
             for i in range(self.number_ID_queues): ###Check for each one of them
                 local_id_queue = self.ID_processed_queues[i]
                 local_reid_queue = self.REID_processed_queues[i]
-                if not local_id_queue.empty(): 
-                    element = local_id_queue.get_nowait()
-                    if self.REID_COUNTER % (self.REID_SKIP_FRAME+1) == 0:
-                        element["reid_result"] = element["model_analysis"]["temporary_people"]
-                        local_reid_queue.put(element) ### Just repeats ID output
-                        self.REID_COUNTER=0
-                    self.REID_COUNTER+=1
+                if not (local_reid_queue.qsize() >= self.QUEUE_MAXIMUM_SIZE):
+                    if not local_id_queue.empty(): 
+                        element = local_id_queue.get_nowait()
+                        if self.REID_COUNTER % (self.REID_SKIP_FRAME+1) == 0:
+                            element["reid_result"] = element["model_analysis"]["temporary_people"]
+                            local_reid_queue.put(element) ### Just repeats ID output
+                            self.REID_COUNTER=0
+                        self.REID_COUNTER+=1
                     
     def REID_to_Output(self):
         ###Initially, there is no need for any conversion, so it's completelly possible to just leave a simple atribution operation. In the future, more operations might be required
