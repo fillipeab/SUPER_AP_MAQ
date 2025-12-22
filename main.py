@@ -20,7 +20,12 @@ def main():
 
     ###running parameters
     queue_index         = 0  ###queue that will be watched
+
+    ###THREADING PARAMETERS##
     SLEEP_TIME          = 0.000001
+    QUEUE_MAXIMUM_SIZE  = 25
+
+
     ID_SKIP_FRAME       = 0
     REID_SKIP_FRAME     = 4
     SKIP_PERMANENCE     = 0
@@ -33,7 +38,8 @@ def main():
     video_sources = video_sources,
     SLEEP_TIME = SLEEP_TIME,
     ID_SKIP_FRAME=ID_SKIP_FRAME,
-    REID_SKIP_FRAME=REID_SKIP_FRAME
+    REID_SKIP_FRAME=REID_SKIP_FRAME,
+    QUEUE_MAXIMUM_SIZE=QUEUE_MAXIMUM_SIZE
     )
     number_output_queues, queues_from_sources, id_processed_queues, reid_processed_queues, first_phase_output_queues = first_phase() ###starts phase 1
     print("phase 1 - running")
@@ -45,7 +51,8 @@ def main():
     SKIP_PERMANENCE=SKIP_PERMANENCE,
     SKIP_MOVEMENT=SKIP_MOVEMENT,
     SKIP_LINE=SKIP_LINE,
-    queues_from_first_phase = first_phase_output_queues
+    queues_from_first_phase = first_phase_output_queues,
+    QUEUE_MAXIMUM_SIZE=QUEUE_MAXIMUM_SIZE
     )
     output_queues = second_phase()
     print("phase 2 - running")

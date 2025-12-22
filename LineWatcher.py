@@ -56,9 +56,12 @@ class LineWatcher(): ###Needs way more work, and maybe it's not the best
     ###static method
     def calculate_neighbourhood(self, list_of_temporary_people, radius : float =50):
         # Array com: [x_center, y_center, person_id]
-        centers_with_ids = np.array([
-            [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2, person.id]
-            for person in list_of_temporary_people for bbox in [person.bbox]])
+        if len(list_of_temporary_people) < 2: 
+            return {p.id: [] for p in list_of_temporary_people} if list_of_temporary_people else {}
+    
+        # Array sempre 2D
+        centers_with_ids = np.array([[(p.bbox[0]+p.bbox[2])/2, (p.bbox[1]+p.bbox[3])/2, p.id] 
+                        for p in list_of_temporary_people])
         
         # Árvore só com coordenadas (ignora ID na distância)
         tree = cKDTree(centers_with_ids[:, :2])  # Apenas x,y

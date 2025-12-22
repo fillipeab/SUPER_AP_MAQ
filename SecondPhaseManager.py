@@ -8,7 +8,13 @@ from SecondProcessManager import SecondProcessManager
 
 @dataclass
 class SecondPhaseManager(): ### Way more linear than phase 1
+
+    ###THREADING CONFIGS###
     SLEEP_TIME              : float = 0.000001
+    QUEUE_MAXIMUM_SIZE    : int = 25 ### FOR PROCESS
+
+
+    ### SKIPPING CONFIGS###
     SKIP_PERMANENCE         : int   = 0
     SKIP_MOVEMENT           : int   = 0 ### REMEMBER, THIS IS RUN ONLY WHEN PERMANENCE IS NOT SKIPPED. WHICH MENAS THAT IT WILL SKIP SKIP_PERMANENCE*SKIP_MOVEMENT
     SKIP_LINE               : int   = 0
@@ -43,17 +49,18 @@ class SecondPhaseManager(): ### Way more linear than phase 1
         ### running process
         while True:
             time.sleep(self.SLEEP_TIME)
-            if not local_queue.empty():
-                element = local_queue.get_nowait()
-                list_of_temporary_person = element["reid_result"]
-                frame = element["frame"]
-                frame_shape = frame.shape
-                return_from_permanence_watcher, return_from_movement_watcher, return_from_line_watcher = local_second_process_manager(list_of_temporary_person,frame_shape)
-                element["return_from_permanence_watcher"] = return_from_permanence_watcher
-                element["return_from_movement_watcher"] = return_from_movement_watcher
-                element["return_from_line_watcher"] = return_from_line_watcher
-                if element: ###only if not empty
-                    local_out_queue.put(element)
+            if not (local_out_queue.qsize()>=self.QUEUE_MAXIMUM_SIZE):
+                if not local_queue.empty():
+                    element = local_queue.get_nowait()
+                    list_of_temporary_person = element["reid_result"]
+                    frame = element["frame"]
+                    frame_shape = frame.shape
+                    return_from_permanence_watcher, return_from_movement_watcher, return_from_line_watcher = local_second_process_manager(list_of_temporary_person,frame_shape)
+                    element["return_from_permanence_watcher"] = return_from_permanence_watcher
+                    element["return_from_movement_watcher"] = return_from_movement_watcher
+                    element["return_from_line_watcher"] = return_from_line_watcher
+                    if element: ###only if not empty
+                        local_out_queue.put(element)
     
     
     

@@ -25,6 +25,7 @@ class FirstPhaseManager:
 
     ### THREADING CONFIGS ###
     SLEEP_TIME            : float = 0.000001
+    QUEUE_MAXIMUM_SIZE    : int = 25 ### FOR PROCESS
     ### THREADING CONFIGS - END ###
 
     ### Objects for operation ###
@@ -41,7 +42,7 @@ class FirstPhaseManager:
         ### VIDEO_FEED_MANAGER - END ###
 
         ### FIRST_PROCESS_MANAGER ###
-        first_process_manager = FirstProcessManager(queues_from_sources = self.queues_from_sources, ID_SKIP_FRAME = self.ID_SKIP_FRAME, REID_SKIP_FRAME = self.REID_SKIP_FRAME, SLEEP_TIME=self.SLEEP_TIME)
+        first_process_manager = FirstProcessManager(queues_from_sources = self.queues_from_sources, ID_SKIP_FRAME = self.ID_SKIP_FRAME, REID_SKIP_FRAME = self.REID_SKIP_FRAME, SLEEP_TIME=self.SLEEP_TIME, QUEUE_MAXIMUM_SIZE = self.QUEUE_MAXIMUM_SIZE)
         ###Start first_process_manager
         ### element in output queue should have the following format {"frame" : frame, "model_analysis" : model_analysis, "reid_result" : list_of_temporary_person}
         number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, self.output_queues = first_process_manager()  
