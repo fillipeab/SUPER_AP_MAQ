@@ -84,7 +84,7 @@ class FirstProcessManager:
         while True: ###infinite loop
             time.sleep(sleep_time)
 
-            if not (local_id_queue.qsize() >= self.QUEUE_MAXIMUM_SIZE): ###IS QUEUE FULL? IF NO, FOLLOWS
+            if (local_id_queue.qsize() < self.QUEUE_MAXIMUM_SIZE): ###IS QUEUE FULL? IF NO, FOLLOWS
                 if not local_source_queue.empty():
                     frame = local_source_queue.get_nowait()
                     if self.ID_COUNTER % (self.ID_SKIP_FRAME+1) == 0:
@@ -92,10 +92,10 @@ class FirstProcessManager:
                         local_id_queue.put({"frame": frame, "model_analysis" : model_analysis})
                         self.ID_COUNTER=0
                     self.ID_COUNTER+=1
-                sleep_time = self.SLEEP_TIME
+                sleep_time = 0
+                sleep_time += self.SLEEP_TIME
             else:
                 sleep_time += self.SLEEP_TIME
-    
     
     def process_ID_to_REID_central(self,reid_system): ###Central because it is one to each source. In the future, other architecture might be implemented 
         sleep_time = self.SLEEP_TIME
@@ -105,7 +105,7 @@ class FirstProcessManager:
                 local_id_queue = self.ID_processed_queues[i]
                 local_reid_queue = self.REID_processed_queues[i]
                 
-                if not (local_reid_queue.qsize() >= self.QUEUE_MAXIMUM_SIZE): ###IS QUEUE FULL? IF NO, FOLLOWS
+                if (local_reid_queue.qsize() < self.QUEUE_MAXIMUM_SIZE): ###IS QUEUE FULL? IF NO, FOLLOWS
                     if not local_id_queue.empty():
                         element = local_id_queue.get_nowait()
                         if self.REID_COUNTER % (self.REID_SKIP_FRAME+1) == 0:
@@ -115,11 +115,11 @@ class FirstProcessManager:
                             local_reid_queue.put(element) ### One REID queue for id queue
                             self.REID_COUNTER=0
                         self.REID_COUNTER+=1
+                    sleep_time = 0
                     sleep_time = self.SLEEP_TIME
                 else: ### QUEUE IS FULL
                     sleep_time += self.SLEEP_TIME ###increase sleep_time
 
-    
     def skip_REID_central(self,reid_system):
         sleep_time = self.SLEEP_TIME
         while True:
@@ -128,7 +128,7 @@ class FirstProcessManager:
                 local_id_queue = self.ID_processed_queues[i]
                 local_reid_queue = self.REID_processed_queues[i]
 
-                if not (local_reid_queue.qsize() >= self.QUEUE_MAXIMUM_SIZE): ###IS QUEUE FULL? IF NO, FOLLOWS
+                if (local_reid_queue.qsize() < self.QUEUE_MAXIMUM_SIZE): ###IS QUEUE FULL? IF NO, FOLLOWS
                     if not local_id_queue.empty(): 
                         element = local_id_queue.get_nowait()
                         if self.REID_COUNTER % (self.REID_SKIP_FRAME+1) == 0:
@@ -136,6 +136,7 @@ class FirstProcessManager:
                             local_reid_queue.put(element) ### Just repeats ID output
                             self.REID_COUNTER=0
                         self.REID_COUNTER+=1
+                    sleep_time = 0
                     sleep_time = self.SLEEP_TIME
                 else:
                     sleep_time += self.SLEEP_TIME

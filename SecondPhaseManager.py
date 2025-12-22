@@ -49,7 +49,7 @@ class SecondPhaseManager(): ### Way more linear than phase 1
         ### running process
         while True:
             time.sleep(self.SLEEP_TIME)
-            if not (local_out_queue.qsize()>=self.QUEUE_MAXIMUM_SIZE):
+            if (local_out_queue.qsize()<self.QUEUE_MAXIMUM_SIZE):
                 if not local_queue.empty():
                     element = local_queue.get_nowait()
                     list_of_temporary_person = element["reid_result"]

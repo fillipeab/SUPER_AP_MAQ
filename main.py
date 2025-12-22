@@ -62,7 +62,7 @@ def main():
     doom_counter = 0
     doom_flag = 0
     listed_counter = 0
-    waiting_multiplier_normal = 30000 ###static
+    waiting_multiplier_normal = 1000 ###static
     waiting_multiplier = waiting_multiplier_normal
     
     
@@ -137,11 +137,9 @@ def main():
                     print ("listed_counter: ",listed_counter) ### see if the process is getting to the end
                     gc.collect()
             
-
-            
             ### breaking mechanism - stops the program once all queues are empty. Keep in mind that second_phase barely uses queues ###
-            if doom_counter%50 == 0: ###printing takes a lot of time. Do it only for important values
-                    print (doom_counter) ### see if the process is getting to the end
+            """if doom_counter%50 == 0: ###printing takes a lot of time. Do it only for important values
+                    print (doom_counter) ### see if the process is getting to the end"""
             if doom_counter == 1000:
                 try: ###checking for empty queues
                     if (queues_from_sources[queue_index].empty() and id_processed_queues[queue_index].empty() and
