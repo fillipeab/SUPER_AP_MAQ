@@ -58,6 +58,8 @@ def main():
     waiting_multiplier_normal = 30000 ###static
     waiting_multiplier = waiting_multiplier_normal
     
+    
+    log = Log()
     try:
         while True:
             time.sleep(SLEEP_TIME*waiting_multiplier)
@@ -83,10 +85,10 @@ def main():
                 
                 ### LOG so we can see who was classified as moving together
                 for temp_person in return_from_permanence_watcher:
-                    write_log(str(temp_person.id))
+                    log.write_in_log(("from permance watcher",str(temp_person.id)))
                 for temp_person in return_from_movement_watcher:
                     print("SPECIAL\n",temp_person)
-                    write_log(str(temp_person.id),"log_2.txt")
+                    log.write_in_log(("from movent watcher",str(temp_person.id)))
                 
                 
                 ### VIDEO WRITER ###
@@ -223,17 +225,25 @@ class BBoxDrawer:
         return frame
 
 
-def write_list_in_log(list):
-    for e in list:
-        write_log(str(e))
-    write_log("\n")
-
-
-def write_log(text, file="log.txt"):
-    with open(file, 'a') as f:
-        f.write(f"{text}\n")
 ###END OF SUPPORT FUNCTIONS###
 
+@dataclass
+class Log():
+    file : str = "log.txt"
+    
+    def __post_in_init__(self):
+        with open(self.file, 'w') as f:
+            f.write("LOG OF OPERATION\n")
+
+    def write_in_log(self, text):
+        with open(self.file,'a') as f:
+            f.write(f"{text}\n")
+
+    def write_list_in_log(self,list):
+        for e in list:
+            self.write_in_log(str(e))
+        self.write_in_log("\n")
+    
 
 
 

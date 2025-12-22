@@ -75,6 +75,7 @@ class PermanenceWatcher():
         ##remove from dict##
         for key in remove_from_p_pc_dict:
             p_pc_dict.pop(key,None)
+            p_people_dict.pop(key,None)
         ### part 2 - end ###
         
         ### part 3 - create an export list of permanent person and remove "forgotten" people

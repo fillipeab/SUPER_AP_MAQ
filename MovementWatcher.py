@@ -73,6 +73,8 @@ class MovementWatcher:
         for key in remove_from_p_pc_dict:
             people_dict.pop(key,None)
             p_pc_dict.pop(key,None)
+            p_changing_pos_dict.pop(key,None)
+            p_mov_dict.pop(key,None)
         ### part 2 - end ###
         
         ### part 3 - counting ###

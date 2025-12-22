@@ -10,6 +10,7 @@ from VideoFeed import VideoFeed
 class VideoFeedManager:
     video_sources       : list = field(default_factory=list)
     queues_from_sources : list = field(default_factory=list)
+    SLEEP_TIME          : float = 0.000001
     MAX_QUEUE_FRAMES    : int = 100  ###A WAY TO AVOID MEMORY OVERLOAD
 
     @property
@@ -29,7 +30,7 @@ class VideoFeedManager:
     def start(self):
         # Iniciar threads
         for i in range(self.number_of_queues): ###for each camera in the list
-            video_feed = VideoFeed(self.video_sources[i], self.queues_from_sources[i],self.MAX_QUEUE_FRAMES)
+            video_feed = VideoFeed(self.video_sources[i], self.queues_from_sources[i], SLEEP_TIME = self.SLEEP_TIME, MAX_QUEUE_FRAMES = self.MAX_QUEUE_FRAMES)
             thread = threading.Thread(
                 target=video_feed ###args are the source, and the queue
             )

@@ -35,13 +35,19 @@ class FirstPhaseManager:
     first_process_manager : FirstProcessManager = field(default_factory=FirstProcessManager)
     
     def __call__(self):
-        video_feed_manager=VideoFeedManager(video_sources = self.video_sources,MAX_QUEUE_FRAMES = self.MAX_QUEUE_FRAMES)
+        ### VIDEO_FEED_MANAGER ###
+        video_feed_manager=VideoFeedManager(video_sources = self.video_sources,MAX_QUEUE_FRAMES = self.MAX_QUEUE_FRAMES, SLEEP_TIME = self.SLEEP_TIME)
         _, self.queues_from_sources = video_feed_manager() ###Starts video_feed_manager
+        ### VIDEO_FEED_MANAGER - END ###
+
+        ### FIRST_PROCESS_MANAGER ###
         first_process_manager = FirstProcessManager(queues_from_sources = self.queues_from_sources, ID_SKIP_FRAME = self.ID_SKIP_FRAME, REID_SKIP_FRAME = self.REID_SKIP_FRAME, SLEEP_TIME=self.SLEEP_TIME)
-        number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, self.output_queues = first_process_manager()  ###Start first_process_manager 
+        ###Start first_process_manager
         ### element in output queue should have the following format {"frame" : frame, "model_analysis" : model_analysis, "reid_result" : list_of_temporary_person}
+        number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, self.output_queues = first_process_manager()  
+        ### FIRST_PROCESS_MANAGER - END ###
+
         return number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, self.output_queues
-        
         
 
 if __name__ == "__main__":
