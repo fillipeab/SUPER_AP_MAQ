@@ -5,7 +5,10 @@ import threading
 import time
 import cv2
 import numpy as np
+
 from TempPerson import TempPerson
+from DoomCounter_and_auxiliaries import BBoxDrawer, VideoWriter, Log, SleepTime
+
 ###WRITE IN VIDEO/OUTPUT###
 
 @dataclass
@@ -22,8 +25,8 @@ class ThirdPhaseManager():
     ###Drawer
     bbdrawer_in_line_colour = (0,255,0) ###colour : GREEN
     bbdrawer_skipper_colour = (255,0,0) ###colour : RED
-    bbdrawer_in_line : Any = None
-    bbdrawer_skipper : Any = None
+    bbdrawer_in_line : BBoxDrawer = field(default_factory=BBoxDrawer)
+    bbdrawer_skipper : BBoxDrawer = field(default_factory=BBoxDrawer)
 
     ###Listed Counter
     Print_Listed_Counter          : bool = True
@@ -53,11 +56,10 @@ class ThirdPhaseManager():
             local_video_writer.update_file_name(local_output_file_name)
         local_log = self.list_of_logs[pos]
 
-
+        sleep_time = SleepTime(self.SLEEP_TIME)
         listed_counter = 0
-        while True:
-            try:
-                time.sleep(self.SLEEP_TIME)
+        try:
+            while True:
                 """
                 element in output queue will have the format - after 1 and second phase
                 {"frame" : frame,
@@ -68,7 +70,6 @@ class ThirdPhaseManager():
                 "return_from_line_watcher" : return_from_line_watcher}             : dict[id,status]
                 """
                 if not local_output_queue.empty():
-
                     if self.Print_Listed_Counter:
                         listed_counter+=1
                         if listed_counter % self.Print_Listed_Counter_interval == 0:
@@ -120,91 +121,29 @@ class ThirdPhaseManager():
                     ### Writing in frame - END ###
                     local_video_writer(frame_to_write)
                     ### VIDEO WRITER - END ###
-            except Exception as e:
-                print("Exception in register :", e)
-            finally:
-                for video_writer in self.list_of_video_writers:
-                    del video_writer
-            break
+
+                    sleep_time.decrease() ###Reset it, slowly
+                else:
+                    sleep_time.increase()
+                time.sleep(sleep_time())
+
+        except Exception as e:
+            print("Exception in register :", e)
+        finally:
+            for video_writer in self.list_of_video_writers:
+                del video_writer
+
+
+    def start(self):
+    # Iniciar threads
+        for i in range(len(self.output_queues)):
+            thread = threading.Thread(
+            target=self.run_third_process,
+            args=(i,) ###args are the source, and the queue
+            )
+            thread.daemon = True ###Doesn't stop the program from ending
+            thread.start() ###Create the thread
 
 
     def __call__(self):
-        for i in range(len(self.output_queues)):
-            self.run_third_process(i)
-            print("Processo de impressão iniciado")
-
-
-
-
-@dataclass
-class Log():
-    file : str = "log.txt"
-    
-    def __post_in_init__(self):
-        with open(self.file, 'w') as f:
-            f.write("LOG OF OPERATION\n")
-
-    def update_file_name(self,new_name : str):
-        self.file = new_name
-    
-    def write_in_log(self, text):
-        with open(self.file,'a') as f:
-            f.write(f"{text}\n")
-
-    def write_list_in_log(self,list):
-        for e in list:
-            self.write_in_log(str(e))
-        self.write_in_log("\n")
-
-
-
-
-@dataclass
-class VideoWriter:
-    output_file: str = 'output.mp4'
-    fps: int = 30
-    width: int = 1920
-    height: int = 1080
-    
-    def __post_init__(self):
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        self.writer = cv2.VideoWriter(
-            self.output_file, 
-            fourcc, 
-            self.fps, 
-            (self.width, self.height)
-        )
-    
-    def update_file_name(self,new_name : str):
-        self.output_file = new_name
-    
-    def __call__(self, frame):
-        self.writer.write(frame)
-    
-    def __del__(self):
-        if hasattr(self, 'writer'):
-            self.writer.release()
-
-
-@dataclass
-class BBoxDrawer:
-    thickness : int = 2
-    padding   : int = 0  # Pixels para expandir
-    color: Tuple[int, int, int] = (0, 255, 0)
-    
-    def __call__(self, frame: np.ndarray, list_of_temp_people: list[TempPerson]) -> np.ndarray:
-        h, w = frame.shape[:2]
-        
-        for t_person in list_of_temp_people:
-            bbox = t_person.bb
-            x1, y1, x2, y2 = map(int, bbox)
-            
-            # Expande a bbox
-            x1 = max(0, x1 - self.padding)
-            y1 = max(0, y1 - self.padding)
-            x2 = min(w, x2 + self.padding)
-            y2 = min(h, y2 + self.padding)
-            
-            cv2.rectangle(frame, (x1, y1), (x2, y2), self.color, self.thickness)
-        
-        return frame
+        self.start()

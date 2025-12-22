@@ -8,7 +8,7 @@ import gc
 from FirstPhaseManager  import FirstPhaseManager
 from SecondPhaseManager import SecondPhaseManager
 from ThirdPhaseManager  import ThirdPhaseManager
-from DoomCounter        import DoomCounter
+from DoomCounter_and_auxiliaries        import DoomCounter
 
 ### começo
 def main():
@@ -37,35 +37,44 @@ def main():
     QUEUE_MAXIMUM_SIZE=QUEUE_MAXIMUM_SIZE,
     MAX_SOURCE_FRAMES_IN_QUEUE = MAX_SOURCE_FRAMES_IN_QUEUE
     )
-    number_output_queues, queues_from_sources, id_processed_queues, reid_processed_queues, first_phase_output_queues = first_phase() ###starts phase 1
-    print("phase 1 - running")
-    ### phase 1 - ok ###
-    
-    ### phase 2 ###
-    second_phase = SecondPhaseManager(
-    SLEEP_TIME=SLEEP_TIME,
-    SKIP_PERMANENCE=SKIP_PERMANENCE,
-    SKIP_MOVEMENT=SKIP_MOVEMENT,
-    SKIP_LINE=SKIP_LINE,
-    queues_from_first_phase = first_phase_output_queues,
-    QUEUE_MAXIMUM_SIZE=QUEUE_MAXIMUM_SIZE
-    )
-    output_queues = second_phase()
-    print("phase 2 - running")
-    ### phase 2 - ok ###
-
-    ###phase 3 ###
-    third_phase = ThirdPhaseManager(output_queues = output_queues)
-    third_phase()
-    print("phase 3 - running")
-    ###phase 3 - ok ###
-
-    ### doom counter ### Inside of try - makes sure everything goes smoothly
     try:
+        ### phase 1 ###
+        number_output_queues, queues_from_sources, id_processed_queues, reid_processed_queues, first_phase_output_queues = first_phase()
+        print("phase 1 - running")
+        ### phase 1 - ok ###
+        
+        ### phase 2 ###
+        second_phase = SecondPhaseManager(
+        SLEEP_TIME=SLEEP_TIME,
+        SKIP_PERMANENCE=SKIP_PERMANENCE,
+        SKIP_MOVEMENT=SKIP_MOVEMENT,
+        SKIP_LINE=SKIP_LINE,
+        queues_from_first_phase = first_phase_output_queues,
+        QUEUE_MAXIMUM_SIZE=QUEUE_MAXIMUM_SIZE
+        )
+        output_queues = second_phase()
+        print("phase 2 - running")
+        ### phase 2 - ok ###
+
+        ### phase 3 ###
+        third_phase = ThirdPhaseManager(output_queues = output_queues)
+        third_phase()
+        print("phase 3 - running")
+        ### phase 3 - ok ###
+
+        ### doom counter ### Inside of try - makes sure everything goes smoothly
+    
         doom_counter = DoomCounter(
         queues_to_check=[q[0] for q in [queues_from_sources,id_processed_queues,reid_processed_queues,first_phase_output_queues,output_queues]]
         )
-        doom_counter()
+        """doom_counter()"""
+        while True:
+            time.sleep(SLEEP_TIME*100)
+            try:
+                if not output_queues[0].empty():
+                    print("NAO ESTA VAZIA")
+            except:
+                print("OH NO")        
     except Exception as e:
         print("ERRO IN MAIN LOOP:" , e)
     except KeyboardInterrupt:

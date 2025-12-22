@@ -36,8 +36,7 @@ class SecondPhaseManager(): ### Way more linear than phase 1
 
     def __post_init__(self):
         for i in range(len(self.queues_from_first_phase)):
-            second_process_manager = SecondProcessManager(SKIP_PERMANENCE = self.SKIP_PERMANENCE, SKIP_MOVEMENT = self.SKIP_MOVEMENT, SKIP_LINE = self.SKIP_LINE) ###cria um second_process_manager para cada queue de entrada
-            self.second_process_managers.append(second_process_manager)
+            self.second_process_managers.append(SecondProcessManager(SKIP_PERMANENCE = self.SKIP_PERMANENCE, SKIP_MOVEMENT = self.SKIP_MOVEMENT, SKIP_LINE = self.SKIP_LINE)) ###cria um second_process_manager para cada queue de entrada
             self.output_queues.append(Queue())
         
     def run_second_process(self,pos):

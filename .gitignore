@@ -4,3 +4,6 @@ output_test_video.mp4
 /__pycache__
 output.mp4
 /__pycache__
+*.mp4
+log.txt
+log_0.txt

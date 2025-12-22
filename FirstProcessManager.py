@@ -6,10 +6,12 @@ import cv2
 from queue import Queue
 from typing import Any, ClassVar
 from dataclasses import dataclass, field
+
 from PersonDB import PersonDB
 from IDSystem import IDSystem
 from REIDSystem import REIDSystem
 from VideoFeedManager import VideoFeedManager
+from DoomCounter_and_auxiliaries import SleepTime
 
 
 
@@ -74,14 +76,15 @@ class FirstProcessManager:
             self.ID_SKIP_FRAME=0
         if self.REID_SKIP_FRAME < 0:
             self.REID_SKIP_FRAME=0
+
+        self.sleep_time = SleepTime(self.SLEEP_TIME)
     
     def process_source_to_id(self,id_system,pos): ###to the correct position
         local_source_queue = self.queues_from_sources[pos]
         local_id_queue = self.ID_processed_queues[pos]
-        sleep_time = self.SLEEP_TIME
+        sleep_time = self.sleep_time
         while True: ###infinite loop
-            time.sleep(sleep_time)
-
+            time.sleep(sleep_time())
             if (local_id_queue.qsize() < self.QUEUE_MAXIMUM_SIZE): ###IS QUEUE FULL? IF NO, FOLLOWS
                 if not local_source_queue.empty():
                     frame = local_source_queue.get_nowait()
@@ -90,19 +93,17 @@ class FirstProcessManager:
                         local_id_queue.put({"frame": frame, "model_analysis" : model_analysis})
                         self.ID_COUNTER=0
                     self.ID_COUNTER+=1
-                sleep_time = 0
-                sleep_time += self.SLEEP_TIME
+                sleep_time.increase()
             else:
-                sleep_time += self.SLEEP_TIME
+                sleep_time.decrease()
     
     def process_ID_to_REID_central(self,reid_system): ###Central because it is one to each source. In the future, other architecture might be implemented 
-        sleep_time = self.SLEEP_TIME
+        sleep_time = self.sleep_time
         while True:
-            time.sleep(sleep_time)
+            time.sleep(sleep_time())
             for i in range(self.number_ID_queues): ###Check for each one of them
                 local_id_queue = self.ID_processed_queues[i]
                 local_reid_queue = self.REID_processed_queues[i]
-                
                 if (local_reid_queue.qsize() < self.QUEUE_MAXIMUM_SIZE): ###IS QUEUE FULL? IF NO, FOLLOWS
                     if not local_id_queue.empty():
                         element = local_id_queue.get_nowait()
@@ -113,15 +114,14 @@ class FirstProcessManager:
                             local_reid_queue.put(element) ### One REID queue for id queue
                             self.REID_COUNTER=0
                         self.REID_COUNTER+=1
-                    sleep_time = 0
-                    sleep_time = self.SLEEP_TIME
+                    sleep_time.increase()
                 else: ### QUEUE IS FULL
-                    sleep_time += self.SLEEP_TIME ###increase sleep_time
+                    sleep_time.decrease() ###increase sleep_time
 
     def skip_REID_central(self,reid_system):
-        sleep_time = self.SLEEP_TIME
+        sleep_time = self.sleep_time
         while True:
-            time.sleep(sleep_time)
+            time.sleep(sleep_time())
             for i in range(self.number_ID_queues): ###Check for each one of them
                 local_id_queue = self.ID_processed_queues[i]
                 local_reid_queue = self.REID_processed_queues[i]
@@ -134,10 +134,9 @@ class FirstProcessManager:
                             local_reid_queue.put(element) ### Just repeats ID output
                             self.REID_COUNTER=0
                         self.REID_COUNTER+=1
-                    sleep_time = 0
-                    sleep_time = self.SLEEP_TIME
+                    sleep_time.increase()
                 else:
-                    sleep_time += self.SLEEP_TIME
+                    sleep_time.decrease()
                     
     def REID_to_Output(self):
         ###Initially, there is no need for any conversion, so it's completelly possible to just leave a simple atribution operation. In the future, more operations might be required
