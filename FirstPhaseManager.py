@@ -14,8 +14,8 @@ import cv2
 @dataclass
 class FirstPhaseManager:
     ### VIDEO _ CONFIGS ###
-    video_sources         : list = field(default_factory=list)
-    MAX_QUEUE_FRAMES      : int = 100  ###A WAY TO AVOID MEMORY OVERLOAD
+    video_sources                   : list = field(default_factory=list)
+    MAX_SOURCE_FRAMES_IN_QUEUE      : int = 100  ###A WAY TO AVOID MEMORY OVERLOAD
     ### VIDEO _ CONFIGS - END ###
 
     ### PROCESSING CONFIGS ###
@@ -42,7 +42,7 @@ class FirstPhaseManager:
     
     def __call__(self):
         ### VIDEO_FEED_MANAGER ###
-        video_feed_manager=VideoFeedManager(video_sources = self.video_sources,MAX_QUEUE_FRAMES = self.MAX_QUEUE_FRAMES, SLEEP_TIME = self.SLEEP_TIME)
+        video_feed_manager=VideoFeedManager(video_sources = self.video_sources,MAX_SOURCE_FRAMES_IN_QUEUE = self.MAX_SOURCE_FRAMES_IN_QUEUE, SLEEP_TIME = self.SLEEP_TIME)
         _, self.queues_from_sources = video_feed_manager() ###Starts video_feed_manager
         ### VIDEO_FEED_MANAGER - END ###
 

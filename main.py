@@ -5,21 +5,16 @@ import os
 import time
 import cv2
 import gc
-from TempPerson import TempPerson
-from FirstPhaseManager import FirstPhaseManager
+from FirstPhaseManager  import FirstPhaseManager
 from SecondPhaseManager import SecondPhaseManager
+from ThirdPhaseManager  import ThirdPhaseManager
+from DoomCounter        import DoomCounter
 
 ### começo
 def main():
     ###video parameters
-    videowriter=VideoWriter(output_file='output.mp4')
     video_sources=["auxiliares/People_in_line_2.mp4"]
-    bbdrawer_line = BBoxDrawer(2,0)
-    bbdrawer_skipper = BBoxDrawer(2,0,(255,0,0))
-
-
-    ###running parameters
-    queue_index         = 0  ###queue that will be watched
+    MAX_SOURCE_FRAMES_IN_QUEUE = 100  ###A WAY TO AVOID MEMORY OVERLOAD
 
     ###THREADING PARAMETERS##
     SLEEP_TIME          = 0.000001
@@ -39,7 +34,8 @@ def main():
     SLEEP_TIME = SLEEP_TIME,
     ID_SKIP_FRAME=ID_SKIP_FRAME,
     REID_SKIP_FRAME=REID_SKIP_FRAME,
-    QUEUE_MAXIMUM_SIZE=QUEUE_MAXIMUM_SIZE
+    QUEUE_MAXIMUM_SIZE=QUEUE_MAXIMUM_SIZE,
+    MAX_SOURCE_FRAMES_IN_QUEUE = MAX_SOURCE_FRAMES_IN_QUEUE
     )
     number_output_queues, queues_from_sources, id_processed_queues, reid_processed_queues, first_phase_output_queues = first_phase() ###starts phase 1
     print("phase 1 - running")
@@ -57,202 +53,28 @@ def main():
     output_queues = second_phase()
     print("phase 2 - running")
     ### phase 2 - ok ###
-    
-    ### Main loop
-    doom_counter = 0
-    doom_flag = 0
-    listed_counter = 0
-    waiting_multiplier_normal = 1000 ###static
-    waiting_multiplier = waiting_multiplier_normal
-    
-    
-    log = Log()
-    
+
+    ###phase 3 ###
+    third_phase = ThirdPhaseManager(output_queues = output_queues)
+    third_phase()
+    print("phase 3 - running")
+    ###phase 3 - ok ###
+
+    ### doom counter ### Inside of try - makes sure everything goes smoothly
     try:
-        while True:
-            time.sleep(SLEEP_TIME*waiting_multiplier)
-            if not output_queues[queue_index].empty():
-                ### get output from queue
-                element = output_queues[queue_index].get_nowait()
-                """
-                element in output queue will have the format - after 1 and second phase
-                {"frame" : frame,
-                "model_analysis" : model_analysis,                                 : analysis from model/varies
-                "reid_result" : list_of_temporary_person,                          : list[TempPerson]   
-                "return_from_permanence_watcher" : return_from_permanence_watcher, : list[TempPerson]
-                "return_from_movement_watcher" : return_from_movement_watcher,     : list[TempPerson]
-                "return_from_line_watcher" : return_from_line_watcher}             : dict[id,status]
-                """
-                listed_counter+=1
-                
-                ###gets the results that we want to see
-                model_analysis = element["model_analysis"]
-                return_from_permanence_watcher = element["return_from_permanence_watcher"]
-                return_from_movement_watcher = element["return_from_movement_watcher"]
-                result = model_analysis["result"] ### !!!!!!!!!!!!!!!!!!!!!!! This line is sensitive to the model type !!!!!!!!!!!!!!!!!!!!!!!!!!!
-                
-                ### LOG so we can see who was classified as moving together
-                for temp_person in return_from_permanence_watcher:
-                    log.write_in_log(("from permance watcher",str(temp_person.id)))
-                for temp_person in return_from_movement_watcher:
-                    print("SPECIAL\n",temp_person)
-                    log.write_in_log(("from movent watcher",str(temp_person.id)))
-                
-                
-                ### VIDEO WRITER ###
-
-                frame_to_write = result[0].plot() ###writes the frame, altered by YOLO, in a video
-                
-                ### COMPARISON - REID with dict coming from  return_from_line_watcher ###
-                list_of_in_line  = []
-                list_of_skippers = []                    ###filthy skippers!!!
-                temp_person_list = element["reid_result"] ### list of people to check
-                dict_from_line_watcher = element["return_from_line_watcher"]
-                if dict_from_line_watcher:
-                    for temp_person in temp_person_list:
-                            if temp_person.id in dict_from_line_watcher: ###line watcher findings
-                                status=dict_from_line_watcher[temp_person.id]
-                                if status == "in_line":
-                                    list_of_in_line.append(temp_person)
-                                elif status == "skipper":
-                                    list_of_skippers.append(temp_person)
-                                else:
-                                    pass
-                ### COMPARISON - END ###
-
-                ### Writing in frame ###
-                if list_of_in_line:
-                    frame_to_write = bbdrawer_line(frame_to_write,list_of_in_line) ###Marks in line
-                if list_of_skippers:
-                    frame_to_write = bbdrawer_skipper(frame_to_write,list_of_skippers) ###Marks skippers
-                ### Writing in frame - END ###
-
-                videowriter(frame_to_write)
-                
-                ### VIDEO WRITER - END ###
-                
-                
-                ###prints how many outputs we already have
-                if listed_counter%50 == 0: ###printing takes a lot of time. Do it only for important values
-                    print ("listed_counter: ",listed_counter) ### see if the process is getting to the end
-                    gc.collect()
-            
-            ### breaking mechanism - stops the program once all queues are empty. Keep in mind that second_phase barely uses queues ###
-            """if doom_counter%50 == 0: ###printing takes a lot of time. Do it only for important values
-                    print (doom_counter) ### see if the process is getting to the end"""
-            if doom_counter == 1000:
-                try: ###checking for empty queues
-                    if (queues_from_sources[queue_index].empty() and id_processed_queues[queue_index].empty() and
-                    reid_processed_queues[queue_index].empty() and output_queues[queue_index].empty()):
-                        doom_flag+=1
-                        if doom_flag == 1:
-                            print("\nDoom is aproaching\n")
-                        elif doom_flag == 2:
-                            print("\nDoom is INEVITABLE!\n")
-                        elif doom_flag == 3:
-                            print("\nDOOOOOOOOOOM!!!\n")
-                        waiting_multiplier = 1
-                    elif (queues_from_sources[queue_index].empty() and id_processed_queues[queue_index].empty() and
-                    reid_processed_queues[queue_index].empty() and not output_queues[queue_index].empty()): ###which menas that there's only output to process
-                        waiting_multiplier = 1
-                    else:
-                        doom_flag=0
-                        waiting_multiplier = waiting_multiplier_normal
-                except Exception as e:
-                    print("Erro: ",e)
-                    
-                doom_counter = 0 ### reset doom counter
-            doom_counter+=1
-            
-            if doom_flag>=3 :
-                break
-            ### breaking mechanism - END ###
-            
+        doom_counter = DoomCounter(
+        queues_to_check=[q[0] for q in [queues_from_sources,id_processed_queues,reid_processed_queues,first_phase_output_queues,output_queues]]
+        )
+        doom_counter()
     except Exception as e:
         print("ERRO IN MAIN LOOP:" , e)
     except KeyboardInterrupt:
         print("interrupted")
     finally:
-        del videowriter
         cv2.destroyAllWindows()
         os._exit(1)
     
 ###END OF MAIN###
-
-
-###SUPPORT FUNCTIONS###
-
-###class to write videos
-@dataclass
-class VideoWriter:
-    output_file: str = 'output.mp4'
-    fps: int = 30
-    width: int = 1920
-    height: int = 1080
-    
-    def __post_init__(self):
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        self.writer = cv2.VideoWriter(
-            self.output_file, 
-            fourcc, 
-            self.fps, 
-            (self.width, self.height)
-        )
-    
-    def __call__(self, frame):
-        self.writer.write(frame)
-    
-    def __del__(self):
-        if hasattr(self, 'writer'):
-            self.writer.release()
-
-
-@dataclass
-class BBoxDrawer:
-    thickness: int = 2
-    padding: int = 0  # Pixels para expandir
-    color: Tuple[int, int, int] = (0, 255, 0)
-    
-    def __call__(self, frame: np.ndarray, list_of_temp_people: List[TempPerson]) -> np.ndarray:
-        h, w = frame.shape[:2]
-        
-        for t_person in list_of_temp_people:
-            bbox = t_person.bb
-            x1, y1, x2, y2 = map(int, bbox)
-            
-            # Expande a bbox
-            x1 = max(0, x1 - self.padding)
-            y1 = max(0, y1 - self.padding)
-            x2 = min(w, x2 + self.padding)
-            y2 = min(h, y2 + self.padding)
-            
-            cv2.rectangle(frame, (x1, y1), (x2, y2), self.color, self.thickness)
-        
-        return frame
-
-
-###END OF SUPPORT FUNCTIONS###
-
-@dataclass
-class Log():
-    file : str = "log.txt"
-    
-    def __post_in_init__(self):
-        with open(self.file, 'w') as f:
-            f.write("LOG OF OPERATION\n")
-
-    def write_in_log(self, text):
-        with open(self.file,'a') as f:
-            f.write(f"{text}\n")
-
-    def write_list_in_log(self,list):
-        for e in list:
-            self.write_in_log(str(e))
-        self.write_in_log("\n")
-    
-
-
-
 
 ### To run the script ###
 if __name__ == "__main__":

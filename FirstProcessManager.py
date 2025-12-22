@@ -60,9 +60,7 @@ class FirstProcessManager:
         return len(queues)
     
     def create_queues(self,number : int = 1):
-        queues = []
-        for i in range(number): ###One queue for each source
-            queues.append(Queue())
+        queues = [Queue() for _ in range(number)]
         return queues
     
     def __post_init__(self):

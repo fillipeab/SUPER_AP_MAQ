@@ -83,15 +83,7 @@ class LineWatcher(): ###Needs way more work, and maybe it's not the best
     def calculate_smaller_axis_average(self,list_of_temporary_people, percent_cut : float = 0):
         if percent_cut == 0:
             percent_cut = self.PERCENT_CUT_TRIM_MEAN
-        smaller_dimension_list = []
-        for person in list_of_temporary_people:
-            bbox = person.bb ###Its in x1,y1,x2,y2 format
-            smaller_dimension = x_variation = abs(bbox[0] - bbox[2])
-            y_variation = abs(bbox[1] - bbox[3])
-            if x_variation>y_variation:
-                smaller_dimension = y_variation
-            ###add to list
-            smaller_dimension_list.append(smaller_dimension)
+        smaller_dimension_list = [min(abs(x2-x1), abs(y2-y1)) for p in list_of_temporary_people for x1, y1, x2, y2 in [p.bb]]
         average = trim_mean(smaller_dimension_list, percent_cut) ###Finds the mean, cutting extremes
         return average
     
@@ -212,15 +204,9 @@ class LineWatcher(): ###Needs way more work, and maybe it's not the best
         self.previous_number_of_people_in_line=number_people_in_line
         
         ###cleaning the dicts###
-        remove_from_dict = []
-        for key in self.people_timeout_dict:
-            self.people_timeout_dict[key]-=1
-            if self.people_timeout_dict[key]<=0:
-                remove_from_dict.append(key)
-        for key in remove_from_dict:
-            self.people_timeout_dict.pop(key,None)
-            self.people_neighbour_id_dict.pop(key,None)
-        ###lets hope this is enough###
+        self.people_timeout_dict = {k: v-1 for k, v in self.people_timeout_dict.items() if v > 1}
+        for key in set(self.people_neighbour_id_dict) - set(self.people_timeout_dict):
+            self.people_neighbour_id_dict.pop(key, None)
 
         return return_dict
 
