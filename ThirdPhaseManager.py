@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Tuple
+from typing import Any, Tuple, Dict
 from queue import Queue
 import threading
 import time
@@ -60,6 +60,9 @@ class ThirdPhaseManager():
         listed_counter = 0
         local_video_writer.start()
         try:
+            ###PERMANENCE THROUGH CYCLES###
+            dict_of_people : Dict[int, str] = {}                    ###filthy skippers!!! or in line people
+            ###PERMANENCE THROUGH CYCLES - END###
             while True:
                 """
                 element in output queue will have the format - after 1 and second phase
@@ -97,25 +100,26 @@ class ThirdPhaseManager():
                     frame_to_write = result[0].plot() ###writes the frame, altered by YOLO, in a video
                     
                     ### COMPARISON - REID with dict coming from  return_from_line_watcher ###
-                    list_of_in_line  = []
-                    list_of_skippers = []                    ###filthy skippers!!!
-                    temp_person_list = element["reid_result"] ### list of people to check
                     dict_from_line_watcher = element["return_from_line_watcher"]
                     if dict_from_line_watcher:
-                        for temp_person in temp_person_list:
-                                if temp_person.id in dict_from_line_watcher: ###line watcher findings
-                                    status=dict_from_line_watcher[temp_person.id]
-                                    if status == "in_line":
-                                        list_of_in_line.append(temp_person)
-                                    elif status == "skipper":
-                                        list_of_skippers.append(temp_person)
-                                    else:
-                                        pass
+                        for key in dict_from_line_watcher:
+                            dict_of_people[key]=dict_from_line_watcher[key] ###changes the permanent dict - EASIER TO UPDATE WITHOUT CHECKING IF IT'S ALREADY THERE
                     ### COMPARISON - END ###
 
                     ### Writing in frame ###
+                    temp_person_list = element["reid_result"] ### list of people to check
+                    list_of_skippers = []
+                    list_of_in_line  = []
+                    for temp_person in temp_person_list:
+                        if temp_person.id in dict_of_people:
+                            status = dict_of_people[temp_person.id]
+                            if status == "in line":
+                                list_of_in_line.append(temp_person)
+                            elif status == "skipper":
+                                list_of_skippers.append(temp_person)
+
                     if list_of_in_line:
-                        frame_to_write = self.bbdrawer_in_line(frame_to_write,list_of_in_line) ###Marks in line
+                        frame_to_write = self.bbdrawer_in_line(frame_to_write,list_of_in_line) ###Marks in_line
                     if list_of_skippers:
                         frame_to_write = self.bbdrawer_skipper(frame_to_write,list_of_skippers) ###Marks skippers
                     ### Writing in frame - END ###
