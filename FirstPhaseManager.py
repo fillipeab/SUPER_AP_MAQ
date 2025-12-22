@@ -66,6 +66,9 @@ class FirstPhaseManager:
         return number_output_queues, queues_from_sources, ID_processed_queues, REID_processed_queues, self.output_queues
         
 
+
+
+### TESTING FirstPhaseManager ###
 if __name__ == "__main__":
     queue_index = 0
     video_sources = ["auxiliares/People_in_line.mp4"]

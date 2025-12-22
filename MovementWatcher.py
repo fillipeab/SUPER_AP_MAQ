@@ -18,7 +18,7 @@ class MovementWatcher:
     people_mov_dict                : dict[int, Any] = field(default_factory=dict) ###dict id -> movement
     SAME_PLACE_IOU                 : float   = 0.8 ### IoU that defines someone that has started a movement
     CYCLES_TO_UPDATE_POS           : int     = 60  ### Cycles between start of movement and "end". That is, to register the new position, and the movement
-    CYCLES_TO_FORGET_MOVE          : int     = 240 ###Number of frames before forgeting the old position and movement direction
+    CYCLES_TO_FORGET_MOVE          : int     = 240 ###Number of cycles before forgeting the old position and movement direction
     TIME_TO_FORGET                 : int     = 12  ###Frames before someone is erased from dicts
     iterator                       : int     = 0
 

@@ -30,7 +30,7 @@ from TempPerson import TempPerson
 class LineWatcher(): ###Needs way more work, and maybe it's not the best
     ### receives the list of people
     PERCENT_CUT_TRIM_MEAN         : float = 0.1
-    NEIGHBOUR_MAX_RADIUS_DISTANCE : float = 1     ###How distance, in smaller_axis value, can a neighbour be - This will be passed to find_nearest_neighbors
+    NEIGHBOUR_MAX_RADIUS_DISTANCE : float = 4     ###How distance, in smaller_axis value, can a neighbour be - This will be passed to find_nearest_neighbors
     ERASE_FROM_DICT_TIMEOUT       : int   = 30    ###Remember, that means the number of runs to erase an entry
     people_neighbour_id_dict      : dict  = field(default_factory=dict) ###List to remember people and their neighbours
     people_timeout_dict           : dict  = field(default_factory=dict) ###Timeout to erasure

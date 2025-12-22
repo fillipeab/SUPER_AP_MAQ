@@ -73,7 +73,7 @@ class REID_type: ###It's not used directly, but works as parent class to any fut
     ###INTERNAL PARAMETER
     tp_eq_dict : dict = field(default_factory=dict)
     ### Show when there is an ID change
-    WARN_ID_CHANGE : bool = True;
+    WARN_ID_CHANGE : bool = True
     
     ###Identifier of REID_type
     reid_type :str = "dummy"
@@ -95,7 +95,7 @@ class mobileCLIP(REID_type):
     def __post_init__(self):
         self.reid_type = "mobileCLIP"
         if self.model is None:
-            self.model, _, self.preprocess = mobileclip.create_model_and_transforms('mobileclip_s0', pretrained='modelo/mobileclip_s0.pt')
+            mobileCLIP.model, _, mobileCLIP.preprocess = mobileclip.create_model_and_transforms('mobileclip_s0', pretrained='modelo/mobileclip_s0.pt')
             self.model.eval()
     
     def yolo_to_pil(self,frame,temp_person):
@@ -129,8 +129,9 @@ class mobileCLIP(REID_type):
             ### Is there any entry in dict that corresponds to this ID(that was atributed by yolo)?
             if temp_id in self.tp_eq_dict: ###Equivalence is already in dict. JUST UPDATE THE FEATURES. DO NOT TRY TO OVERCORRECT THE PROGRAM.
                 p_id = self.tp_eq_dict[temp_id] ### gets permanent person id from dict
-                person = self.person_db.get_person_by_id(p_id) ### get person
-                person.features = (person.features+features_from_tp)/2 ###Updates person feature
+                person : Person = self.person_db.get_person_by_id(p_id) ### get person
+                if person:
+                    person.features = (person.features+features_from_tp)/2 ###Updates person feature
                 
                 ### Modifies Temporary_person id in list to match
                 self.change_id(temp_person,p_id,"already in dict\n")
