@@ -21,7 +21,7 @@ class SecondProcessManager(): ###Allow for best integration of all steps
         return_from_permanence_watcher = []
         return_from_movement_watcher = []
         return_from_line_watcher = []
-
+        
         if self.counter % (self.SKIP_PERMANENCE+1) == 0:
             return_from_permanence_watcher = self.permanence_watcher(list_of_temporary_person)
             if self.counter % ((self.SKIP_PERMANENCE*self.SKIP_MOVEMENT)+1) == 0:
@@ -32,4 +32,5 @@ class SecondProcessManager(): ###Allow for best integration of all steps
                 
         self.counter+=1
         ### por hora ###
+        ###print(return_from_permanence_watcher,return_from_movement_watcher,return_from_line_watcher)
         return return_from_permanence_watcher, return_from_movement_watcher, return_from_line_watcher

@@ -1,17 +1,22 @@
 from dataclasses import dataclass, field
 from typing import List, Tuple
 import numpy as np
-import os
-import time
 import cv2
+
+import os
 import gc
+import threading
+import time
+
 from FirstPhaseManager  import FirstPhaseManager
 from SecondPhaseManager import SecondPhaseManager
 from ThirdPhaseManager  import ThirdPhaseManager
-from DoomCounter_and_auxiliaries        import DoomCounter
+from DoomCounter_and_auxiliaries  import DoomCounter
 
 ### começo
 def main():
+
+    ### PROGRAM VARIABLES ###
     ###video parameters
     video_sources=["auxiliares/People_in_line_2.mp4"]
     MAX_SOURCE_FRAMES_IN_QUEUE = 100  ###A WAY TO AVOID MEMORY OVERLOAD
@@ -22,24 +27,31 @@ def main():
 
 
     ID_SKIP_FRAME       = 0
-    REID_SKIP_FRAME     = 5
-    SKIP_PERMANENCE     = 20
+    REID_SKIP_FRAME     = 0
+    SKIP_PERMANENCE     = 0
     SKIP_MOVEMENT       = 0
     SKIP_LINE           = 0
+
+    SKIP_REID           = False  ### True or False
+    CENTRAL_REID        = True
     
-    ###Program variables
-    ### phase 1 ###
-    first_phase=FirstPhaseManager(
-    video_sources = video_sources,
-    SLEEP_TIME = SLEEP_TIME,
-    ID_SKIP_FRAME=ID_SKIP_FRAME,
-    REID_SKIP_FRAME=REID_SKIP_FRAME,
-    QUEUE_MAXIMUM_SIZE=QUEUE_MAXIMUM_SIZE,
-    MAX_SOURCE_FRAMES_IN_QUEUE = MAX_SOURCE_FRAMES_IN_QUEUE
-    )
+    ###DEBUG###
+    show_monitor_thread = True
+    ### PROGRAM VARIABLES - END ###
+
     try:
         ### phase 1 ###
-        number_output_queues, queues_from_sources, id_processed_queues, reid_processed_queues, first_phase_output_queues = first_phase()
+        first_phase=FirstPhaseManager(
+        SKIP_REID    = SKIP_REID,
+        CENTRAL_REID = CENTRAL_REID,
+        video_sources = video_sources,
+        SLEEP_TIME = SLEEP_TIME,
+        ID_SKIP_FRAME=ID_SKIP_FRAME,
+        REID_SKIP_FRAME=REID_SKIP_FRAME,
+        QUEUE_MAXIMUM_SIZE=QUEUE_MAXIMUM_SIZE,
+        MAX_SOURCE_FRAMES_IN_QUEUE = MAX_SOURCE_FRAMES_IN_QUEUE
+        )
+        _, queues_from_sources, id_processed_queues, reid_processed_queues, first_phase_output_queues = first_phase()
         print("phase 1 - running")
         ### phase 1 - ok ###
         
@@ -67,14 +79,21 @@ def main():
         doom_counter = DoomCounter(
         queues_to_check=[q[0] for q in [queues_from_sources,id_processed_queues,reid_processed_queues,first_phase_output_queues,output_queues]]
         )
-        """doom_counter()"""
-        while True:
-            time.sleep(SLEEP_TIME*100)
+       
+        if show_monitor_thread == True:
+            monitor_thread = threading.Thread(target=monitor_threads, daemon=True)
+            monitor_thread.start()
+        doom_counter()
+        ###
+        """while True:
+            time.sleep(SLEEP_TIME*100_000_000)
             try:
                 if not output_queues[0].empty():
                     print("NAO ESTA VAZIA")
             except:
-                print("OH NO")        
+                print("OH NO")   """
+        ###
+             
     except Exception as e:
         print("ERRO IN MAIN LOOP:" , e)
     except KeyboardInterrupt:
@@ -83,6 +102,19 @@ def main():
         cv2.destroyAllWindows()
         os._exit(1)
     
+
+def monitor_threads(interval=120):
+    """Run after 120s, with it follows the expected"""
+    while True:
+        print(f"\n=== Threads ativas: {threading.active_count()} ===")
+        
+        for thread in threading.enumerate():
+            print(f"  {thread.name}: {'Alive' if thread.is_alive() else 'Dead'} - Daemon: {thread.daemon}")
+        
+        time.sleep(interval)
+
+
+
 ###END OF MAIN###
 
 ### To run the script ###

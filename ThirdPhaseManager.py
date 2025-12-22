@@ -74,7 +74,6 @@ class ThirdPhaseManager():
                         listed_counter+=1
                         if listed_counter % self.Print_Listed_Counter_interval == 0:
                             print("Listed Counter: ",listed_counter)
-                            listed_counter=0
 
                     ###gets the results that we want to see
                     element = local_output_queue.get_nowait()

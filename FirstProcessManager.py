@@ -88,14 +88,15 @@ class FirstProcessManager:
             if (local_id_queue.qsize() < self.QUEUE_MAXIMUM_SIZE): ###IS QUEUE FULL? IF NO, FOLLOWS
                 if not local_source_queue.empty():
                     frame = local_source_queue.get_nowait()
+                    ### print("frame_captured")
                     if self.ID_COUNTER % (self.ID_SKIP_FRAME+1) == 0:
                         model_analysis = id_system(frame)
                         local_id_queue.put({"frame": frame, "model_analysis" : model_analysis})
                         self.ID_COUNTER=0
                     self.ID_COUNTER+=1
-                sleep_time.increase()
-            else:
                 sleep_time.decrease()
+            else:
+                sleep_time.increase()
     
     def process_ID_to_REID_central(self,reid_system): ###Central because it is one to each source. In the future, other architecture might be implemented 
         sleep_time = self.sleep_time
@@ -114,9 +115,9 @@ class FirstProcessManager:
                             local_reid_queue.put(element) ### One REID queue for id queue
                             self.REID_COUNTER=0
                         self.REID_COUNTER+=1
-                    sleep_time.increase()
+                    sleep_time.decrease()
                 else: ### QUEUE IS FULL
-                    sleep_time.decrease() ###increase sleep_time
+                    sleep_time.increase() ###increase sleep_time
 
     def skip_REID_central(self,reid_system):
         sleep_time = self.sleep_time
@@ -127,16 +128,17 @@ class FirstProcessManager:
                 local_reid_queue = self.REID_processed_queues[i]
 
                 if (local_reid_queue.qsize() < self.QUEUE_MAXIMUM_SIZE): ###IS QUEUE FULL? IF NO, FOLLOWS
-                    if not local_id_queue.empty(): 
+                    if not local_id_queue.empty():
+                        ###print("reid_skipped") 
                         element = local_id_queue.get_nowait()
                         if self.REID_COUNTER % (self.REID_SKIP_FRAME+1) == 0:
                             element["reid_result"] = element["model_analysis"]["temporary_people"]
                             local_reid_queue.put(element) ### Just repeats ID output
                             self.REID_COUNTER=0
                         self.REID_COUNTER+=1
-                    sleep_time.increase()
-                else:
                     sleep_time.decrease()
+                else:
+                    sleep_time.increase()
                     
     def REID_to_Output(self):
         ###Initially, there is no need for any conversion, so it's completelly possible to just leave a simple atribution operation. In the future, more operations might be required
@@ -173,12 +175,13 @@ class FirstProcessManager:
         ###end###   
         
         ###threading
-        thread = threading.Thread(
-        target=thread_target,
-        args=(reid_system,) ###args are the source, and the queue
-        )
-        thread.daemon = True ###Doesn't stop the program from ending
-        thread.start() ###Create the thread
+        if thread_target != 0:
+            thread = threading.Thread(
+            target=thread_target,
+            args=(reid_system,) ###args are the source, and the queue
+            )
+            thread.daemon = True ###Doesn't stop the program from ending
+            thread.start() ###Create the thread
         ### End of REID ###
         
         ### REID -> OUTPUT ###

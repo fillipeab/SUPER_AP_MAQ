@@ -33,6 +33,8 @@ class FirstPhaseManager:
     QUEUE_MAXIMUM_SIZE    : int = 25 ### FOR PROCESS
     ### THREADING CONFIGS - END ###
 
+
+    ### NOT ADVISABLE TO MESS WITH THE VARIABLES BELOW ###
     ### Objects for operation ###
     queues_from_sources   : list = field(default_factory=list)
     output_queues         : list = field(default_factory=list)     

@@ -12,12 +12,10 @@ from TempPerson import TempPerson
 @dataclass
 class DoomCounter():
    queues_to_check           : list[Queue] = field(default_factory=list)
-   SLEEP_TIME                : float = 0.000001
-   CYCLES_TO_ACTION          : int   = 50
-   waiting_multiplier_normal : int = 2_000_000 ###VERY ocasional
+   CYCLES_TO_ACTION          : int   = 100
+   SLEEP_TIME                : float = 0.000_001
+   waiting_multiplier_normal : int = 1 #1_000_000 ###VERY ocasional
    
-   def __post_init__(self):
-       self.queues_to_check = [Queue(),]
    def __call__(self):
         doom_counter = 0
         doom_flag    = 0
@@ -30,7 +28,6 @@ class DoomCounter():
                         ###ACTIONS TO COMPLETE###
                         ###print (doom_counter) ### see if the process is getting to the end
                         gc.collect()
-
                 if doom_counter == 1000:
                     try: ###checking for empty queues
                         if all(q.empty() for q in self.queues_to_check):
@@ -47,6 +44,13 @@ class DoomCounter():
                         else:
                             doom_flag=0
                             waiting_multiplier = 0 + self.waiting_multiplier_normal
+                        print(
+                            "\n\nobjects in queue_from_source", self.queues_to_check[0].qsize(),
+                            "\nobjects in queue_from_id", self.queues_to_check[1].qsize(),
+                            "\nobjects in reid_processed_queues", self.queues_to_check[2].qsize(),
+                            "\nobjects in first_phase_output", self.queues_to_check[3].qsize(),
+                            "\nobjects in output second phase", self.queues_to_check[4].qsize()
+                        )
                     except Exception as e:
                         print("Erro: ",e)
                         

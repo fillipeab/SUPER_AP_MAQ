@@ -33,7 +33,8 @@ class VideoFeedManager:
         for i in range(self.number_of_queues): ###for each camera in the list
             video_feed = VideoFeed(self.video_sources[i], self.queues_from_sources[i], SLEEP_TIME = self.SLEEP_TIME, MAX_SOURCE_FRAMES_IN_QUEUE = self.MAX_SOURCE_FRAMES_IN_QUEUE)
             thread = threading.Thread(
-                target=video_feed ###args are the source, and the queue
+                target=video_feed, ###args are the source, and the queue
+                args=()
             )
             thread.daemon = True ###Doesn't stop the program from ending
             thread.start() ###Create the thread
