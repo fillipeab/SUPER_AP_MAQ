@@ -13,7 +13,7 @@ from SecondPhaseManager import SecondPhaseManager
 def main():
     ###video parameters
     videowriter=VideoWriter(output_file='output.mp4')
-    video_sources=["auxiliares/walking_around.mp4"]
+    video_sources=["auxiliares/People_in_line_2.mp4"]
     bbdrawer_line = BBoxDrawer(2,0)
     bbdrawer_skipper = BBoxDrawer(2,0,(255,0,0))
 
@@ -27,8 +27,8 @@ def main():
 
 
     ID_SKIP_FRAME       = 0
-    REID_SKIP_FRAME     = 4
-    SKIP_PERMANENCE     = 0
+    REID_SKIP_FRAME     = 5
+    SKIP_PERMANENCE     = 20
     SKIP_MOVEMENT       = 0
     SKIP_LINE           = 0
     
@@ -67,6 +67,7 @@ def main():
     
     
     log = Log()
+    
     try:
         while True:
             time.sleep(SLEEP_TIME*waiting_multiplier)
@@ -98,7 +99,7 @@ def main():
                     log.write_in_log(("from movent watcher",str(temp_person.id)))
                 
                 
-                """### VIDEO WRITER ###
+                ### VIDEO WRITER ###
 
                 frame_to_write = result[0].plot() ###writes the frame, altered by YOLO, in a video
                 
@@ -128,7 +129,7 @@ def main():
 
                 videowriter(frame_to_write)
                 
-                ### VIDEO WRITER - END ###"""
+                ### VIDEO WRITER - END ###
                 
                 
                 ###prints how many outputs we already have

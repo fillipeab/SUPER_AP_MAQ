@@ -13,9 +13,9 @@ class VideoFeed:
 
     def __call__(self):
         sleep_time = 0
-        cap = cv2.VideoCapture(self.source)
         while True:
             if not (self.video_queue.qsize() >= self.MAX_QUEUE_FRAMES): ###JUST WAIT MORE
+                cap = cv2.VideoCapture(self.source)
                 ret,frame = cap.read()
                 if not ret:
                     break
@@ -23,7 +23,7 @@ class VideoFeed:
                 self.video_queue.put(frame) ### DON'T DISCART FRAMES
                 ###print("frames_in_queue:",self.video_queue.qsize(),"\n")
                 sleep_time = 0
+                cap.release()
             else:
                 sleep_time += self.SLEEP_TIME ###Each time it recurrently pass through here, it waits more
             time.sleep(sleep_time)
-        cap.release()

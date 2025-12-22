@@ -26,7 +26,6 @@ class FirstProcessManager:
     REID_processed_queues : list = field(default_factory=list) ###Internal
     Output_queues         : list = field(default_factory=list) ###External
 
-    QUEUE_MAXIMUM_SIZE    : int = 25
     ### element in output queue should have the following format {"frame" : frame, "model_analysis" : model_analysis, "reid_result" : list_of_temporary_person}
     
     ### pos_init variables
@@ -47,9 +46,10 @@ class FirstProcessManager:
     SKIP_REID    : bool = True ### True or False
     CENTRAL_REID : bool = True
     
-    ###SLEEP TIME
+    ###Threading configs###
     SLEEP_TIME   : float = 0.000001
-    
+    QUEUE_MAXIMUM_SIZE    : int = 25
+
     ###Person DB
     person_db : PersonDB = field(default_factory=PersonDB)
     
@@ -80,9 +80,11 @@ class FirstProcessManager:
     def process_source_to_id(self,id_system,pos): ###to the correct position
         local_source_queue = self.queues_from_sources[pos]
         local_id_queue = self.ID_processed_queues[pos]
+        sleep_time = self.SLEEP_TIME
         while True: ###infinite loop
-            time.sleep(self.SLEEP_TIME)
-            if not (local_id_queue.qsize() >= self.QUEUE_MAXIMUM_SIZE):
+            time.sleep(sleep_time)
+
+            if not (local_id_queue.qsize() >= self.QUEUE_MAXIMUM_SIZE): ###IS QUEUE FULL? IF NO, FOLLOWS
                 if not local_source_queue.empty():
                     frame = local_source_queue.get_nowait()
                     if self.ID_COUNTER % (self.ID_SKIP_FRAME+1) == 0:
@@ -90,16 +92,20 @@ class FirstProcessManager:
                         local_id_queue.put({"frame": frame, "model_analysis" : model_analysis})
                         self.ID_COUNTER=0
                     self.ID_COUNTER+=1
+                sleep_time = self.SLEEP_TIME
+            else:
+                sleep_time += self.SLEEP_TIME
     
     
     def process_ID_to_REID_central(self,reid_system): ###Central because it is one to each source. In the future, other architecture might be implemented 
+        sleep_time = self.SLEEP_TIME
         while True:
-            time.sleep(self.SLEEP_TIME)
+            time.sleep(sleep_time)
             for i in range(self.number_ID_queues): ###Check for each one of them
                 local_id_queue = self.ID_processed_queues[i]
                 local_reid_queue = self.REID_processed_queues[i]
                 
-                if not (local_reid_queue.qsize() >= self.QUEUE_MAXIMUM_SIZE):
+                if not (local_reid_queue.qsize() >= self.QUEUE_MAXIMUM_SIZE): ###IS QUEUE FULL? IF NO, FOLLOWS
                     if not local_id_queue.empty():
                         element = local_id_queue.get_nowait()
                         if self.REID_COUNTER % (self.REID_SKIP_FRAME+1) == 0:
@@ -109,14 +115,20 @@ class FirstProcessManager:
                             local_reid_queue.put(element) ### One REID queue for id queue
                             self.REID_COUNTER=0
                         self.REID_COUNTER+=1
+                    sleep_time = self.SLEEP_TIME
+                else: ### QUEUE IS FULL
+                    sleep_time += self.SLEEP_TIME ###increase sleep_time
+
     
     def skip_REID_central(self,reid_system):
+        sleep_time = self.SLEEP_TIME
         while True:
-            time.sleep(self.SLEEP_TIME)
+            time.sleep(sleep_time)
             for i in range(self.number_ID_queues): ###Check for each one of them
                 local_id_queue = self.ID_processed_queues[i]
                 local_reid_queue = self.REID_processed_queues[i]
-                if not (local_reid_queue.qsize() >= self.QUEUE_MAXIMUM_SIZE):
+
+                if not (local_reid_queue.qsize() >= self.QUEUE_MAXIMUM_SIZE): ###IS QUEUE FULL? IF NO, FOLLOWS
                     if not local_id_queue.empty(): 
                         element = local_id_queue.get_nowait()
                         if self.REID_COUNTER % (self.REID_SKIP_FRAME+1) == 0:
@@ -124,6 +136,9 @@ class FirstProcessManager:
                             local_reid_queue.put(element) ### Just repeats ID output
                             self.REID_COUNTER=0
                         self.REID_COUNTER+=1
+                    sleep_time = self.SLEEP_TIME
+                else:
+                    sleep_time += self.SLEEP_TIME
                     
     def REID_to_Output(self):
         ###Initially, there is no need for any conversion, so it's completelly possible to just leave a simple atribution operation. In the future, more operations might be required
