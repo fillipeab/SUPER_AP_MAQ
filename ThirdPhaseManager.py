@@ -44,8 +44,8 @@ class ThirdPhaseManager():
             self.list_of_logs = [Log(f"log_{i}.txt") for i in range(len(self.output_queues))]
         
         ###DEFINING BBOX drawer
-        self.bbdrawer_in_line = BBoxDrawer(2,0,self.bbdrawer_in_line_colour)
-        self.bbdrawer_skipper = BBoxDrawer(2,0,self.bbdrawer_skipper_colour)
+        self.bbdrawer_in_line = BBoxDrawer(4,0,self.bbdrawer_in_line_colour)
+        self.bbdrawer_skipper = BBoxDrawer(4,0,self.bbdrawer_skipper_colour)
 
 
     def run_third_process(self, pos : int):
