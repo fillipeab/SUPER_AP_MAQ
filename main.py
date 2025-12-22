@@ -107,11 +107,11 @@ def main():
 def monitor_threads(interval=12_000):
     """Run after 120s, with it follows the expected"""
     while True:
-        print(f"\n\n=== Threads ativas: {threading.active_count()} ===")
+        print(f"\n\n======= Threads ativas: {threading.active_count()} =======")
         
         for thread in threading.enumerate():
             print(f"  {thread.name}: {'Alive' if thread.is_alive() else 'Dead'} - Daemon: {thread.daemon}")
-        print(f"\n\n========================")
+        print(f"=================================")
         time.sleep(interval)
 
 

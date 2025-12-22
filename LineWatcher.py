@@ -54,11 +54,14 @@ class LineWatcher(): ###Needs way more work, and maybe it's not the best
     ### 3 neighbours    - 25%
 
     ###static method
-    def calculate_neighbourhood(self, list_of_temporary_people, radius : float =50):
+    def calculate_neighbourhood(self, list_of_temporary_people, radius : float = 50):
     
-        centers_with_ids = np.array([[(p.bbox[0]+p.bbox[2])/2, (p.bbox[1]+p.bbox[3])/2, p.id] 
+        centers_with_ids = np.array([[(p.bb[0]+p.bb[2])/2, (p.bb[1]+p.bb[3])/2, p.id] 
                         for p in list_of_temporary_people])
         
+        if len(list_of_temporary_people) == 0:
+            return {}
+
         tree = cKDTree(centers_with_ids[:, :2])
         neighbors_by_id = {}
         
@@ -137,6 +140,12 @@ class LineWatcher(): ###Needs way more work, and maybe it's not the best
         total_disruption = (neighbour_self_disruption*neighbour_self_disruption_weight+neighbourhood_disruption*neighbourhood_disruption_weight)/(neighbour_self_disruption_weight*neighbourhood_disruption_weight)
         return total_disruption
 
+    def similarity_neighbourhood(self, t1, t2):
+        combined = torch.cat([t1, t2])
+        unique, counts = combined.unique(return_counts=True)
+        same = (counts > 1).sum().item()
+        total_unique = len(unique)
+        return same / total_unique if total_unique > 0 else 1.0
 
     def __call__(self,list_of_temporary_people : list[TempPerson], frame_shape : Tuple[int,...] = (720, 1280, 3)): ###LineWatcher is called
         return_dict : dict[int, Literal["skipper", "in line", "wait"]]  = {}
@@ -146,27 +155,28 @@ class LineWatcher(): ###Needs way more work, and maybe it's not the best
         ### 1 - check list - get new people ###
         new_people = []
         for temp_person in list_of_temporary_people:
-            t_id=temp_person.id
-            if t_id not in self.people_timeout_dict:
-                new_people.append(temp_person)
-            else: ###old people in dict
-                ###compare to find internal line skipers - only the bold ones
-                old_neighbour = self.people_neighbour_id_dict[t_id]
-                new_neighbourhood = new_neighbourhood_dict[t_id]
-                IoU_neighbourhood = bbox_iou(old_neighbour,new_neighbourhood)
-                if IoU_neighbourhood < self.BOLD_INTERNAL_SKIPPER:
-                    ###FOUND A BOLD ONE
-                    return_dict[t_id] = "skipper"
-                else:
-                    pass
-            self.people_neighbour_id_dict[t_id] = new_neighbourhood_dict[t_id] ### Adds/updates neighbourhood
-            self.people_timeout_dict[t_id] = self.ERASE_FROM_DICT_TIMEOUT ### Anyone has the timeout redifined
+            if temp_person:
+                t_id=temp_person.id
+                if t_id not in self.people_timeout_dict:
+                    new_people.append(temp_person)
+                else: ###old people in dict
+                    ###compare to find internal line skipers - only the bold ones
+                    old_neighbour = self.people_neighbour_id_dict[t_id]
+                    new_neighbourhood = new_neighbourhood_dict[t_id]
+                    IoU_neighbourhood = self.similarity_neighbourhood(old_neighbour,new_neighbourhood)
+                    if IoU_neighbourhood < self.BOLD_INTERNAL_SKIPPER:
+                        ###FOUND A BOLD ONE
+                        return_dict[t_id] = "skipper"
+                    else:
+                        pass
+                self.people_neighbour_id_dict[t_id] = new_neighbourhood_dict[t_id] ### Adds/updates neighbourhood
+                self.people_timeout_dict[t_id] = self.ERASE_FROM_DICT_TIMEOUT ### Anyone has the timeout redifined
 
-            ###update min/max - for neighbourhood disruption
-            if self.max_number_of_neighbours < len(new_neighbourhood_dict):
-                self.max_number_of_neighbours = len(new_neighbourhood_dict)
-            if self.min_number_of_neighbours > len(new_neighbourhood_dict):
-                self.min_number_of_neighbours = len(new_neighbourhood_dict)
+                ###update min/max - for neighbourhood disruption
+                if self.max_number_of_neighbours < len(new_neighbourhood_dict):
+                    self.max_number_of_neighbours = len(new_neighbourhood_dict)
+                if self.min_number_of_neighbours > len(new_neighbourhood_dict):
+                    self.min_number_of_neighbours = len(new_neighbourhood_dict)
             
         ###End of 1###
         ### new people localized ###
@@ -177,7 +187,6 @@ class LineWatcher(): ###Needs way more work, and maybe it's not the best
             if number_people_in_line > self.previous_number_of_people_in_line:
                 base_skipping_probability+=self.PS_MORE_PEOPLE_IN_LINE
             skipping_probability = 0
-
 
             ### checking new people
             for temp_person in new_people:

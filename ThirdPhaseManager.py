@@ -88,7 +88,7 @@ class ThirdPhaseManager():
                     for temp_person in return_from_permanence_watcher:
                         local_log.write_in_log(("from permance watcher",str(temp_person.id)))
                     for temp_person in return_from_movement_watcher:
-                        print("SPECIAL\n",temp_person)
+                        ### print("SPECIAL\n",temp_person)
                         local_log.write_in_log(("from movent watcher",str(temp_person.id)))
                     
                     

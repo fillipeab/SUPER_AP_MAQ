@@ -13,7 +13,7 @@ from TempPerson import TempPerson
 class MovementWatcher:
     ### MovementWatcher[list[TempPerson]] -> list[TempPerson]
     permanent_people_counter_dict  : dict[int, int] = field(default_factory=dict) ###dict with id -> times seen
-    people_dict                    : dict[int,  TempPerson] = field(default_factory=dict)
+    people_dict                    : dict[int,  TempPerson] = field(default_factory=dict) ### dict wit id -> temporary_person
     changing_pos_dict              : dict[int, int] = field(default_factory=dict) ###dict with id -> value. When someone moves(IOU), this value starts increasing, till it gets to NEW_POS_THRESHOLD. Then, it updates their POS, and goes to -MOVING_THRESHOLD. It will increase till it gets to 0. When this happens, their movement is reset to 0.
     people_mov_dict                : dict[int, Any] = field(default_factory=dict) ###dict id -> movement
     SAME_PLACE_IOU                 : float   = 0.7 ### IoU that defines someone that has started a movement
@@ -30,34 +30,35 @@ class MovementWatcher:
         self.iterator+=1
         ### part 1 - entry interaction ###
         for temp_person in list_from_WP:
-            
-            ### PC DICT UPDATING - 1.1 ###
-            tp_id = temp_person.id
-            if tp_id in p_pc_dict: 
-                ### person already in dict
-                p_pc_dict[tp_id] = (self.TIME_TO_FORGET)
-                ### end ###    
-                ### MOVEMENT CHECKING ###
-                if p_changing_pos_dict[tp_id] <= 0: ### >0 means its already moving. =<0 means it either has been moved, or is still in place
-                    iou_matrix = round(float(bbox_iou(temp_person.bb, people_dict[tp_id].bb)),3) ###to check for movement
-                    if iou_matrix < self.SAME_PLACE_IOU:
-                        print("someone has started MOVING:",tp_id,"turn: ",self.iterator)
-                        p_changing_pos_dict[tp_id]=1  ### starts the counting
-                else: ###It is under change
-                    if p_changing_pos_dict[tp_id]==self.CYCLES_TO_UPDATE_POS: ###has reach the threshold. Changes must be accounted for
-                        p_mov_dict[tp_id]=temp_person.bb-people_dict[tp_id].bb ###updates movement
-                        people_dict[tp_id]=temp_person ###updates person
-                        p_changing_pos_dict[tp_id] = -self.CYCLES_TO_FORGET_MOVE
-                        
-                        
-            ### END OF UPDATING ###
-            else:
-            ### Added to dict now
-                p_pc_dict[tp_id]  = self.TIME_TO_FORGET
-                people_dict[tp_id] = temp_person
-                p_changing_pos_dict[tp_id] = 0
-                p_mov_dict[tp_id] = torch.tensor([0,0,0,0])
-            ### FINDING THE MOVEMENT THRESHOLD ###
+            if temp_person: ###avoids empty lines
+                ### PC DICT UPDATING - 1.1 ###
+                tp_id = temp_person.id
+                if tp_id in p_pc_dict: ### ALREADY IN DICT
+                    p_pc_dict[tp_id] = (self.TIME_TO_FORGET)
+                    ### end ###    
+                    ### MOVEMENT CHECKING ###
+                    if p_changing_pos_dict[tp_id] <= 0: ### >0 means its already moving. =<0 means it either has been moved, or is still in place
+                        ### print(temp_person.bb," compare ",people_dict[tp_id].bb)   
+                        iou_matrix = round(float(bbox_iou(temp_person.bb, people_dict[tp_id].bb)),3) ###to check for movement
+                        if iou_matrix < self.SAME_PLACE_IOU:
+                            ### print("someone has started MOVING:",tp_id,"turn: ",self.iterator)
+                            p_changing_pos_dict[tp_id]=1  ### starts the counting
+                            
+                    else: ###It is under change
+                        if p_changing_pos_dict[tp_id]==self.CYCLES_TO_UPDATE_POS: ###has reach the threshold. Changes must be accounted for
+                            p_mov_dict[tp_id]=temp_person.bb-people_dict[tp_id].bb ###updates movement
+                            people_dict[tp_id]=temp_person ###updates person
+                            p_changing_pos_dict[tp_id] = -self.CYCLES_TO_FORGET_MOVE
+                            
+                            
+                ### END OF UPDATING ###
+                else: ###NOT IN DICT
+                ### Added to dict now
+                    p_pc_dict[tp_id]  = self.TIME_TO_FORGET
+                    people_dict[tp_id] = temp_person
+                    p_changing_pos_dict[tp_id] = 0
+                    p_mov_dict[tp_id] = torch.tensor([0,0,0,0])
+                ### FINDING THE MOVEMENT THRESHOLD ###
         ### part 1 - end ###
         
         ### part 2 - update memory
@@ -86,20 +87,15 @@ class MovementWatcher:
                     p_mov_dict[key]=torch.tensor([0,0,0,0])
         
         ### PART 4 - finally, time to export people in sync movement ###
-        moved_people_dict = {}
-        for key in p_mov_dict:
-            if not ( torch.all(p_mov_dict[key]==torch.tensor([0,0,0,0])) ):
-                moved_people_dict[key]=p_mov_dict[key] ###Adds to the moved_person_dict
+        moved_people_dict = {k: v for k, v in p_mov_dict.items() if torch.any(v != 0)} ### creates a new dict, where it's only the people that have moved in some cordinate
         
         ### Part 5 - Checks for the biggest cluster of tensors -> which will correspond to the direction of the line
         ### IMPORTANT: ITS CONSIDERED THAT SYNCRONIZED MOVEMENT, IN THE AREA OF THE CAMERA, IS THE MAIN LINE. REMEMBER, THAT IS PEOPLE CONSISTENTLY IN IMAGE GOING IN THE SAME DIRECTION
-        
         selected_group = find_movement_group(moved_people_dict) ###Will only return something if the group is big enough
-        
         ### Make the exporting list ###
         list_of_people_in_sync_movement = []
         if len(selected_group) > 0:
-            print("finally, A GROUP!")
+            ###print("finally, A GROUP!")
             for key in selected_group:
                 list_of_people_in_sync_movement.append(people_dict[key]) ###return list of temporary people, with bb
         
