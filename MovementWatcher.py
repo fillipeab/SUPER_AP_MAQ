@@ -5,6 +5,7 @@ from typing import Any
 from ultralytics.utils.metrics import bbox_iou
 from sklearn.cluster import DBSCAN
 import torch
+from copy import deepcopy
 import numpy as np
 
 from TempPerson import TempPerson
@@ -16,11 +17,12 @@ class MovementWatcher:
     people_dict                    : dict[int,  TempPerson] = field(default_factory=dict) ### dict wit id -> temporary_person
     changing_pos_dict              : dict[int, int] = field(default_factory=dict) ###dict with id -> value. When someone moves(IOU), this value starts increasing, till it gets to NEW_POS_THRESHOLD. Then, it updates their POS, and goes to -MOVING_THRESHOLD. It will increase till it gets to 0. When this happens, their movement is reset to 0.
     people_mov_dict                : dict[int, Any] = field(default_factory=dict) ###dict id -> movement
-    SAME_PLACE_IOU                 : float   = 0.6 ### IoU that defines someone that has started a movement
-    CYCLES_TO_UPDATE_POS           : int     = 48  ### Cycles between start of movement and "end". That is, to register the new position, and the movement
-    CYCLES_TO_FORGET_MOVE          : int     = 120 ###Number of cycles before forgeting the old position and movement direction
+    SAME_PLACE_IOU                 : float   = 0.8 ### IoU that defines someone that has started a movement
+    CYCLES_TO_UPDATE_POS           : int     = 72  ### Cycles between start of movement and "end". That is, to register the new position, and the movement
+    CYCLES_TO_FORGET_MOVE          : int     = 280 ###Number of cycles before forgeting the old position and movement direction
     TIME_TO_FORGET                 : int     = 48  ###Frames before someone is erased from dicts
     iterator                       : int     = 0
+    eps                            : float   =0.75
 
     def __call__(self, list_from_WP : list[TempPerson]): ###list_of_temporary_people_from_PermanenceWatcher
         p_pc_dict = self.permanent_people_counter_dict
@@ -35,31 +37,33 @@ class MovementWatcher:
                 ### PC DICT UPDATING - 1.1 ###
                 tp_id = int(temp_person.id)
                 if tp_id in p_pc_dict: ### ALREADY IN DICT
-                    print("in dict")
+                    ###print("in dict")
                     p_pc_dict[tp_id] = (self.TIME_TO_FORGET)
                     ### end ###    
                     ### MOVEMENT CHECKING ###
                     if p_changing_pos_dict[tp_id] <= 0: ### >0 means its already moving. =<0 means it either has been moved, or is still in place
                         ### print(temp_person.bb," compare ",people_dict[tp_id].bb)   
                         iou_matrix = round(float(bbox_iou(temp_person.bb, people_dict[tp_id].bb)),3) ###to check for movement
+                        ###print("maybe change? ",iou_matrix)
+                        ###print(tp_id,temp_person.bb,people_dict[tp_id].bb)
                         if iou_matrix < self.SAME_PLACE_IOU:
-                            print("someone has started MOVING:",tp_id,"turn: ",self.iterator)
+                            ###print("someone has started MOVING: ",tp_id," turn: ",self.iterator," iou ",iou_matrix)
                             p_changing_pos_dict[tp_id]=1  ### starts the counting
                             
                     else: ###It is under change
                         if p_changing_pos_dict[tp_id]==self.CYCLES_TO_UPDATE_POS: ###has reach the threshold. Changes must be accounted for
                             p_mov_dict[tp_id]=temp_person.bb-people_dict[tp_id].bb ###updates movement
-                            print(p_mov_dict[tp_id])
-                            people_dict[tp_id]=temp_person ###updates person
+                            ###print(p_mov_dict[tp_id])
+                            people_dict[tp_id]=deepcopy(temp_person) ###updates person
                             p_changing_pos_dict[tp_id] = -self.CYCLES_TO_FORGET_MOVE
                             
                             
                 ### END OF UPDATING ###
                 else: ###NOT IN DICT
                 ### Added to dict now
-                    print("new person",tp_id)
+                    ###print("new person",tp_id)
                     p_pc_dict[tp_id]  = self.TIME_TO_FORGET
-                    people_dict[tp_id] = temp_person
+                    people_dict[tp_id] = deepcopy(temp_person)
                     p_changing_pos_dict[tp_id] = 0
                     p_mov_dict[tp_id] = torch.tensor([0,0,0,0])
                 ### FINDING THE MOVEMENT THRESHOLD ###
@@ -95,7 +99,7 @@ class MovementWatcher:
         
         ### Part 5 - Checks for the biggest cluster of tensors -> which will correspond to the direction of the line
         ### IMPORTANT: ITS CONSIDERED THAT SYNCRONIZED MOVEMENT, IN THE AREA OF THE CAMERA, IS THE MAIN LINE. REMEMBER, THAT IS PEOPLE CONSISTENTLY IN IMAGE GOING IN THE SAME DIRECTION
-        selected_group, _ = find_cluster(moved_people_dict) ###Will only return something if the group is big enough
+        selected_group, _ = find_cluster(moved_people_dict, eps = self.eps) ###Will only return something if the group is big enough
         ### Make the exporting list ###
         list_of_people_in_sync_movement = []
         if len(selected_group) > 0:
