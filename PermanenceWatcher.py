@@ -13,7 +13,7 @@ class PermanenceWatcher():
     ### PermanenceWatcher[list[TempPerson]] -> list[TempPerson]
     permanent_people_counter_dict : dict[int,int] = field(default_factory=dict) ###dict with key -> times seen
     permanent_people_dict : dict[int,TempPerson] = field(default_factory=dict)
-    LIMIT_SEEN_COUNTER = 100
+    LIMIT_SEEN_COUNTER = 96
     PERMANENT_THRESHOLD = 24
     EXPORT_THRESHOLD = PERMANENT_THRESHOLD+1
     OUT_OF_PERMANENCE_THRESHOLD = PERMANENT_THRESHOLD-3 ###must be bigger than discart THRESHOLD

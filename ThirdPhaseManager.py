@@ -117,7 +117,7 @@ class ThirdPhaseManager():
                     list_of_skippers = []
                     list_of_in_line  = []
                     for temp_person in temp_person_list:
-                        if temp_person.id in dict_of_people:
+                        if int(temp_person.id) in dict_of_people:
                             status = dict_of_people[temp_person.id]
                             if status == "in line":
                                 list_of_in_line.append(temp_person)

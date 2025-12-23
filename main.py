@@ -18,13 +18,13 @@ def main():
 
     ### PROGRAM VARIABLES ###
     ###video parameters
-    video_sources=["auxiliares/video1.mp4","auxiliares/People_in_line_2.mp4","auxiliares/video2.mp4"] ###
+    video_sources=["auxiliares/video1.mp4"] ### ,"auxiliares/People_in_line_2.mp4","auxiliares/video2.mp4"
     list_passing_parameters_dicts = []
-    MAX_SOURCE_FRAMES_IN_QUEUE = 100  ###A WAY TO AVOID MEMORY OVERLOAD
+    MAX_SOURCE_FRAMES_IN_QUEUE = 200  ###A WAY TO AVOID MEMORY OVERLOAD
 
     ###THREADING PARAMETERS##
     SLEEP_TIME          = 0.000_001
-    QUEUE_MAXIMUM_SIZE  = 45
+    QUEUE_MAXIMUM_SIZE  = 100
 
 
     ID_SKIP_FRAME       = 0
@@ -33,7 +33,7 @@ def main():
     SKIP_MOVEMENT       = 0
     SKIP_LINE           = 0
 
-    SKIP_REID           = False  ### True or False
+    SKIP_REID           = True  ### True or False
     CENTRAL_REID        = True
     
     ###DEBUG###

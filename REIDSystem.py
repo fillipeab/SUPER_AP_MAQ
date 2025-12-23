@@ -122,7 +122,7 @@ class mobileCLIP(REID_type):
         ###Get features from all temporary people in list
         ###Keep in mind this list will NOT be preserved. Its very nature is being temporary
         for temp_person in list_of_temporary_person:
-            temp_id = temp_person.id
+            temp_id = int(temp_person.id)
             features_from_tp = self.yolo_to_pil(frame,temp_person) ###Gets features from temporary person
             
 

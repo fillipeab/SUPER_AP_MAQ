@@ -78,7 +78,7 @@ class YoloID8n():
             element=frame.boxes
             try:
                 for i in range(len(element.id)): ###Getting the number of detections
-                    temporary_people.append(TempPerson(id = element.id[i], bb = element.xyxy[i], confidence = element.conf[i]))
+                    temporary_people.append(TempPerson(id = int(element.id[i]), bb = element.xyxy[i], confidence = element.conf[i]))
             except:
                 pass
         model_analysis = {"result" : model_result, "temporary_people" : temporary_people}      
