@@ -16,7 +16,7 @@ class MovementWatcher:
     people_dict                    : dict[int,  TempPerson] = field(default_factory=dict) ### dict wit id -> temporary_person
     changing_pos_dict              : dict[int, int] = field(default_factory=dict) ###dict with id -> value. When someone moves(IOU), this value starts increasing, till it gets to NEW_POS_THRESHOLD. Then, it updates their POS, and goes to -MOVING_THRESHOLD. It will increase till it gets to 0. When this happens, their movement is reset to 0.
     people_mov_dict                : dict[int, Any] = field(default_factory=dict) ###dict id -> movement
-    SAME_PLACE_IOU                 : float   = 0.6 ### IoU that defines someone that has started a movement
+    SAME_PLACE_IOU                 : float   = 0.3 ### IoU that defines someone that has started a movement
     CYCLES_TO_UPDATE_POS           : int     = 48  ### Cycles between start of movement and "end". That is, to register the new position, and the movement
     CYCLES_TO_FORGET_MOVE          : int     = 72 ###Number of cycles before forgeting the old position and movement direction
     TIME_TO_FORGET                 : int     = 48  ###Frames before someone is erased from dicts
