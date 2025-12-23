@@ -18,7 +18,7 @@ def main():
 
     ### PROGRAM VARIABLES ###
     ###video parameters
-    video_sources=["auxiliares/People_in_line_2.mp4"] ### ,"auxiliares/People_in_line_2.mp4","auxiliares/video2.mp4","auxiliares/video1.mp4","auxiliares/LINE.mp4"
+    video_sources=["auxiliares/People_in_line_2.mp4","auxiliares/video2.mp4","auxiliares/video1.mp4","auxiliares/LINE.mp4"] ### ,"auxiliares/People_in_line_2.mp4","auxiliares/video2.mp4","auxiliares/video1.mp4","auxiliares/LINE.mp4"
     list_passing_parameters_dicts = []
     MAX_SOURCE_FRAMES_IN_QUEUE = 200  ###A WAY TO AVOID MEMORY OVERLOAD
 
@@ -33,11 +33,13 @@ def main():
     SKIP_MOVEMENT       = 0
     SKIP_LINE           = 0
 
-    SKIP_REID           = True  ### True or False
-    CENTRAL_REID        = True
+    SKIP_REID           = False  ### True or False
+    CENTRAL_REID        = True ### DO NOT CHANGE THIS
     
     ###DEBUG###
-    show_monitor_thread = True
+    show_monitor_thread = False
+    print_queue_stats = False
+    print_counting  = False
     ### PROGRAM VARIABLES - END ###
     
     try:
@@ -79,8 +81,8 @@ def main():
         ### doom counter ### Inside of try - makes sure everything goes smoothly
         ###DEBUGERS AND COUNTERS###
         doom_counter = DoomCounter(
-        print_queue_stats = True,
-        print_counting  = False,
+        print_queue_stats = print_queue_stats,
+        print_counting  = print_counting,
         queues_to_check=[q[0] for q in [queues_from_sources,id_processed_queues,reid_processed_queues,first_phase_output_queues,output_queues]]
         )
        
