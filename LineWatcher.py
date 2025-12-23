@@ -165,7 +165,7 @@ class LineWatcher(): ###Needs way more work, and maybe it's not the best
         new_people = []
         for temp_person in list_of_temporary_people:
             if temp_person:
-                t_id=temp_person.id
+                t_id=int(temp_person.id)
                 if t_id not in self.people_timeout_dict:
                     new_people.append(temp_person)
                 else: ###old people in dict
@@ -206,16 +206,16 @@ class LineWatcher(): ###Needs way more work, and maybe it's not the best
                 ### end of near the border
                 ### NEIGHBOUR DISRUPTION   ###
                 skipping_probability += (
-                self.neighbourhood_disruption(temp_person.id, neighbour_self_disruption_weight = self.neighbour_self_disruption_weight, neighbourhood_disruption_weight = self.neighbour_self_disruption_weight)
+                self.neighbourhood_disruption(int(temp_person.id), neighbour_self_disruption_weight = self.neighbour_self_disruption_weight, neighbourhood_disruption_weight = self.neighbour_self_disruption_weight)
                 *self.PS_NEIGHBOUR_DISRUPTION
                 )
                 ### NEIGHBOUR DISRUPTION - END ###
 
                 ### FINALLY, CHECKS FOR SKIPPERS ###
                 if skipping_probability>self.PS_CONFIRMED_SKIPPER:
-                    return_dict[temp_person.id]="skipper"
+                    return_dict[int(temp_person.id)]="skipper"
                 else:
-                    return_dict[temp_person.id]="in line" ### WITH THIS, EVERYONE IS EITHER CLASSIFIED AS "IN LINE" OR "SKIPPER". They can still be spotted skipping. The process of return someone to in_line was not implemented. The reason is simple. It would require some degree of guessing, and could make the model go in conflict with itself. Future implementations, using machine learning, could get it without much trouble, especially in a classification problem such as this.
+                    return_dict[int(temp_person.id)]="in line" ### WITH THIS, EVERYONE IS EITHER CLASSIFIED AS "IN LINE" OR "SKIPPER". They can still be spotted skipping. The process of return someone to in_line was not implemented. The reason is simple. It would require some degree of guessing, and could make the model go in conflict with itself. Future implementations, using machine learning, could get it without much trouble, especially in a classification problem such as this.
         ###Finally, updates variables
         self.previous_number_of_people_in_line=number_people_in_line
         

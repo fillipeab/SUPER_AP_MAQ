@@ -26,8 +26,7 @@ class ThirdPhaseManager():
     ###Drawer
     bbdrawer_in_line_colour = (0,255,0) ###colour : GREEN
     bbdrawer_skipper_colour = (255,0,0) ###colour : RED
-    bbdrawer_in_line : BBoxDrawer = field(default_factory=BBoxDrawer)
-    bbdrawer_skipper : BBoxDrawer = field(default_factory=BBoxDrawer)
+    bbdrawer_moving_colour  = (255,255,0) ###colour : YELLOW
 
     ###Listed Counter
     Print_Listed_Counter          : bool = True
@@ -52,6 +51,7 @@ class ThirdPhaseManager():
         ###DEFINING BBOX drawer
         self.bbdrawer_in_line = BBoxDrawer(4,0,self.bbdrawer_in_line_colour)
         self.bbdrawer_skipper = BBoxDrawer(4,0,self.bbdrawer_skipper_colour)
+        self.bbdrawer_moving  = BBoxDrawer(4,0,self.bbdrawer_moving_colour)
 
 
     def run_third_process(self, pos : int):
@@ -90,7 +90,7 @@ class ThirdPhaseManager():
                     ###gets the results that we want to see
                     model_analysis = element["model_analysis"]
                     return_from_permanence_watcher = element["return_from_permanence_watcher"]
-                    return_from_movement_watcher = element["return_from_movement_watcher"]
+                    return_from_movement_watcher = element["return_from_movement_watcher"]["sync_moving"]
                     result = model_analysis["result"] ### !!!!!!!!!!!!!!!!!!!!!!! This line is sensitive to the model type !!!!!!!!!!!!!!!!!!!!!!!!!!!
                     
                     ### LOG so we can see who was classified as moving together
@@ -106,6 +106,7 @@ class ThirdPhaseManager():
                     frame_to_write = result[0].plot() ###writes the frame, altered by YOLO, in a video
                     
                     ### COMPARISON - REID with dict coming from  return_from_line_watcher ###
+                    set_of_moving_people = (element["return_from_movement_watcher"])["set_of_moving_people"]
                     dict_from_line_watcher = element["return_from_line_watcher"]
                     if dict_from_line_watcher:
                         for key in dict_from_line_watcher:
@@ -116,18 +117,24 @@ class ThirdPhaseManager():
                     temp_person_list = element["reid_result"] ### list of people to check
                     list_of_skippers = []
                     list_of_in_line  = []
+                    list_of_moving   = []
                     for temp_person in temp_person_list:
-                        if temp_person.id in dict_of_people:
+                        if int(temp_person.id) in dict_of_people:
                             status = dict_of_people[temp_person.id]
                             if status == "in line":
                                 list_of_in_line.append(temp_person)
                             elif status == "skipper":
                                 list_of_skippers.append(temp_person)
+                        elif int(temp_person.id) in  set_of_moving_people: ###only in not in the previous dict
+                                list_of_moving.append(temp_person)
 
                     if list_of_in_line:
                         frame_to_write = self.bbdrawer_in_line(frame_to_write,list_of_in_line) ###Marks in_line
                     if list_of_skippers:
                         frame_to_write = self.bbdrawer_skipper(frame_to_write,list_of_skippers) ###Marks skippers
+                    if list_of_moving:
+                        frame_to_write = self.bbdrawer_moving(frame_to_write,list_of_skippers) ###Marks moving
+                    
                     ### Writing in frame - END ###
                     local_video_writer(frame_to_write)
                     ### VIDEO WRITER - END ###
