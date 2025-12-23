@@ -27,7 +27,7 @@ class SecondProcessManager(): ###Allow for best integration of all steps
             if self.counter % ((self.SKIP_PERMANENCE*self.SKIP_MOVEMENT)+1) == 0:
                 return_from_movement_watcher = self.movement_watcher(return_from_permanence_watcher)
                 if self.counter % ((self.SKIP_PERMANENCE*self.SKIP_MOVEMENT*self.SKIP_LINE)+1) == 0:
-                    return_from_line_watcher = self.line_watcher(return_from_movement_watcher,frame_shape)
+                    return_from_line_watcher = self.line_watcher(return_from_movement_watcher["sync_moving"],frame_shape)
                     self.counter=0
                 
         self.counter+=1

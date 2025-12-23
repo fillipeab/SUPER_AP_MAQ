@@ -26,8 +26,6 @@ class ThirdPhaseManager():
     ###Drawer
     bbdrawer_in_line_colour = (0,255,0) ###colour : GREEN
     bbdrawer_skipper_colour = (255,0,0) ###colour : RED
-    bbdrawer_in_line : BBoxDrawer = field(default_factory=BBoxDrawer)
-    bbdrawer_skipper : BBoxDrawer = field(default_factory=BBoxDrawer)
     bbdrawer_moving_colour  = (255,255,0) ###colour : YELLOW
 
     ###Listed Counter
@@ -92,7 +90,7 @@ class ThirdPhaseManager():
                     ###gets the results that we want to see
                     model_analysis = element["model_analysis"]
                     return_from_permanence_watcher = element["return_from_permanence_watcher"]
-                    return_from_movement_watcher = element["return_from_movement_watcher"]
+                    return_from_movement_watcher = element["return_from_movement_watcher"]["sync_moving"]
                     result = model_analysis["result"] ### !!!!!!!!!!!!!!!!!!!!!!! This line is sensitive to the model type !!!!!!!!!!!!!!!!!!!!!!!!!!!
                     
                     ### LOG so we can see who was classified as moving together
