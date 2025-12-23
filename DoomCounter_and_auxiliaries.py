@@ -98,18 +98,21 @@ class Log():
 
 @dataclass
 class VideoWriter:
+    fps: int
+    width: int
+    height: int
     output_file: str = 'output.mp4'
-    fps: int = 30
-    width: int = 1920
-    height: int = 1080
     
     def start(self):
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        self.writer = cv2.VideoWriter(
-            self.output_file, 
-            fourcc, 
-            self.fps, 
-            (self.width, self.height)
+        if self.fps is None or self.width is None or self.height is None:
+            print("VideoWriter not properly initialized with video properties")
+        else:
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            self.writer = cv2.VideoWriter(
+                self.output_file, 
+                fourcc, 
+                self.fps, 
+                (self.width, self.height)
         )
     def release(self):
         self.writer.release()
@@ -118,7 +121,10 @@ class VideoWriter:
         self.output_file = new_name
     
     def __call__(self, frame):
-        self.writer.write(frame)
+        if self.writer:
+            self.writer.write(frame)
+        else:
+            pass
     
     def __del__(self):
         if hasattr(self, 'writer'):

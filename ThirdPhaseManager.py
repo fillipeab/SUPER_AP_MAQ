@@ -14,7 +14,8 @@ from DoomCounter_and_auxiliaries import BBoxDrawer, VideoWriter, Log, SleepTime
 @dataclass
 class ThirdPhaseManager():
     ###Entry
-    output_queues         : list[Queue]       = field(default_factory=list)
+    output_queues                 : list[Queue] = field(default_factory=list)
+    list_passing_parameters_dicts : list[Dict]  = field(default_factory=list)
 
     ###Internal process
     output_file_names     : list[str]         = field(default_factory=list)
@@ -39,7 +40,12 @@ class ThirdPhaseManager():
         if not self.output_file_names:
             self.output_file_names = [f"output_{i}.mp4" for i in range(len(self.output_queues))]
         if not self.list_of_video_writers:
-            self.list_of_video_writers = [VideoWriter(self.output_file_names[i]) for i in range(len(self.output_queues))]
+            for i in range(len(self.output_queues)):
+                fps = self.list_passing_parameters_dicts[i]["fps"]
+                width = self.list_passing_parameters_dicts[i]["width"]
+                height = self.list_passing_parameters_dicts[i]["height"]
+                new_video_writer = VideoWriter(fps=fps, width=width, height=height,output_file=self.output_file_names[i])
+                self.list_of_video_writers.append(new_video_writer)
         if not self.list_of_logs:
             self.list_of_logs = [Log(f"log_{i}.txt") for i in range(len(self.output_queues))]
         
@@ -92,7 +98,7 @@ class ThirdPhaseManager():
                         local_log.write_in_log(("from permance watcher",str(temp_person.id)))
                     for temp_person in return_from_movement_watcher:
                         ### print("SPECIAL\n",temp_person)
-                        local_log.write_in_log(("from movent watcher",str(temp_person.id)))
+                        local_log.write_in_log(("from movement watcher",str(temp_person.id)))
                     
                     
                     ### VIDEO WRITER ###
